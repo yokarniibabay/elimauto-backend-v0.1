@@ -3,40 +3,38 @@ package com.example.elimauto.controllers;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.services.AnnouncementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.util.List;
+
+@RestController // @RestController вместо @Controller для работы с JSON
+@RequestMapping("/api/announcements") // Общий URL для API
 @RequiredArgsConstructor
 public class AnnouncementController {
     private final AnnouncementService announcementService;
 
-
-    @GetMapping("/")
-    public String announcements(Model model) {
-        model.addAttribute("announcements", announcementService.listAnnouncements());
-        return "announcements";
+    // Получение всех объявлений в виде JSON
+    @GetMapping
+    public List<Announcement> getAllAnnouncements() {
+        return announcementService.listAnnouncements();
     }
 
-    @GetMapping("/announcement/{id}")
-    public String announcementInfo(@PathVariable Long id, Model model) {
-        model.addAttribute("announcement", announcementService.getAnnouncementById(id));
-        return "announcement-info";
+    // Получение конкретного объявления по ID
+    @GetMapping("/{id}")
+    public Announcement getAnnouncementById(@PathVariable Long id) {
+        return announcementService.getAnnouncementById(id);
     }
 
-    @PostMapping("/announcement/create")
-    public String createAnnouncement(Announcement announcement) {
+    // Создание нового объявления
+    @PostMapping("/add")
+    public Announcement createAnnouncement(@RequestBody Announcement announcement) {
         announcementService.saveAnnouncement(announcement);
-        return "redirect:/";
+        return announcement; // Вернуть созданное объявление как JSON-ответ
     }
 
-    @PostMapping("/announcement/delete/{id}")
-    public String deleteAnnouncement(@PathVariable Long id) {
+    // Удаление объявления по ID
+    @DeleteMapping("/delete/{id}")
+    public void deleteAnnouncement(@PathVariable Long id) {
         announcementService.deleteAnnouncements(id);
-        return "redirect:/";
     }
-
 }

@@ -24,6 +24,12 @@ public class AnnouncementService {
                 24990000,
                 "Алматы",
                 "Виталя"));
+        announcements.add(new Announcement(++ID,
+                "попка",
+                "6.3 AMG жооооска валит",
+                24990000,
+                "Алматы",
+                "Виталя"));
     }
 
     public List<Announcement> listAnnouncements() {
@@ -41,7 +47,8 @@ public class AnnouncementService {
 
     public Announcement getAnnouncementById(Long id) {
         for (Announcement announcement : announcements) {
-            if (announcement.getId().equals(id)) return announcement;
+            if (announcement.getId().equals(id))
+                return announcement;
         }
         return null;
     }
