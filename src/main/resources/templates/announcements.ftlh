@@ -5,11 +5,17 @@
 </head>
 <body>
 <h1>ELIMAUTO</h1><hr>
-    Объявления по всему Казахстану
+    <h4>Объявления по всему Казахстану</h4>
+    <form action="/" method="get">
+        Поиск по названию объявления: <input type="text" name="title"><br>
+        <input type="submit" value="Поиск"/>
+    </form>
 <#list announcements as announcement>
     <div>
-        <p><b>${announcement.title}</b> ${announcement.price} тенге | <a href="/announcement/${announcement.id}">Подробнее...</a></p>
+        <p><b>${announcement.title}</b> ${announcement.price} | <a href="/announcement/${announcement.id}">Подробнее...</a></p>
     </div>
+    <#else>
+    <h3>Здесь пока пусто...</h3>
 </#list>
 <hr>
 <h3>Создать новое объявление</h3>

@@ -1,48 +1,34 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.models.Announcement;
+import com.example.elimauto.repositories.AnnouncementRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class AnnouncementService {
-    private List<Announcement> announcements = new ArrayList<>();
-    private long ID = 0;
+    private final AnnouncementRepository announcementRepository;
 
-    {
-        announcements.add(new Announcement(++ID,
-                "BMW",
-                "не битая, не крашенная",
-                13500000,
-                "Шымкент",
-                "ADMIN"));
-        announcements.add(new Announcement(++ID,
-                "Mercedes Benz",
-                "6.3 AMG жооооска валит",
-                24990000,
-                "Алматы",
-                "Виталя"));
-    }
-
-    public List<Announcement> listAnnouncements() {
-        return announcements;
+    public List<Announcement> listAnnouncements(String title) {
+        if (title != null) return announcementRepository.findByTitle(title);
+        return announcementRepository.findAll();
     }
 
     public void saveAnnouncement(Announcement announcement) {
-        announcement.setId(++ID);
-        announcements.add(announcement);
+        log.info("Saving new {}", announcement);
+        announcementRepository.save(announcement);
     }
 
     public void deleteAnnouncements(Long id) {
-        announcements.removeIf(announcement -> announcement.getId().equals(id));
+        announcementRepository.deleteById(id);
     }
 
     public Announcement getAnnouncementById(Long id) {
-        for (Announcement announcement : announcements) {
-            if (announcement.getId().equals(id)) return announcement;
-        }
-        return null;
+        return announcementRepository.findById(id).orElse(null);
     }
 }
