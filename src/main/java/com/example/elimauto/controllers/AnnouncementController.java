@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -24,13 +28,17 @@ public class AnnouncementController {
 
     @GetMapping("/announcement/{id}")
     public String announcementInfo(@PathVariable Long id, Model model) {
-        model.addAttribute("announcement", announcementService.getAnnouncementById(id));
+        Announcement announcement = announcementService.getAnnouncementById(id);
+        model.addAttribute("announcement", announcement);
+        model.addAttribute("images", announcement.getImages());
         return "announcement-info";
     }
 
     @PostMapping("/announcement/create")
-    public String createAnnouncement(Announcement announcement) {
-        announcementService.saveAnnouncement(announcement);
+    public String createAnnouncement(@RequestParam("files") List<MultipartFile> files,
+                                     Announcement announcement) throws IOException {
+
+        announcementService.saveAnnouncement(announcement, files);
         return "redirect:/";
     }
 

@@ -19,14 +19,14 @@
 </#list>
 <hr>
 <h3>Создать новое объявление</h3>
-<form action="/announcement/create" method="post">
-    Название объявления: <input type="text" name="title"/><br><br>
-    Описание объявления: <input type="text" name="description"/><br><br>
-    Цена: <input type="number" name="price"/><br><br>
-    Город: <input type="text" name="city"/><br><br>
+<form action="/announcement/create" method="post" enctype="multipart/form-data">
+    Название объявления: <input type="text" name="title" required/><br><br>
+    Описание объявления: <input type="text" name="description" required/><br><br>
+    Цена: <input type="number" name="price" required/><br><br>
+    Город: <input type="text" name="city" required/><br><br>
     Имя: <input type="text" name="author"/><br><br>
+    Загрузите фото: <input type="file" name="files" multiple required/><br><br>
 <input type="submit" value="Добавить объявление"/>
-
 </form>
 </body>
 </html>
