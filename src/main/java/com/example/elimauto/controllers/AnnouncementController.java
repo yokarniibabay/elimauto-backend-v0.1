@@ -2,50 +2,70 @@ package com.example.elimauto.controllers;
 
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.services.AnnouncementService;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 
-@Controller
+@RestController
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class AnnouncementController {
     private final AnnouncementService announcementService;
 
 
-    @GetMapping("/")
-    public String announcements(@RequestParam(name = "title", required = false) String title, Model model) {
-        model.addAttribute("announcements", announcementService.listAnnouncements(title));
-        return "announcements";
+    @GetMapping("/announcements")
+    public ResponseEntity<List<Announcement>> getAnnouncements(@RequestParam(name = "title", required = false) String title) {
+        List<Announcement> announcements = announcementService.listAnnouncements(title);
+        return new ResponseEntity<>(announcements, HttpStatus.OK);
     }
 
     @GetMapping("/announcement/{id}")
-    public String announcementInfo(@PathVariable Long id, Model model) {
+    public ResponseEntity<Announcement> getAnnouncementInfo(@PathVariable Long id) {
         Announcement announcement = announcementService.getAnnouncementById(id);
-        model.addAttribute("announcement", announcement);
-        model.addAttribute("images", announcement.getImages());
-        return "announcement-info";
+        if (announcement == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(announcement, HttpStatus.OK);
     }
 
     @PostMapping("/announcement/create")
-    public String createAnnouncement(@RequestParam("files") List<MultipartFile> files,
-                                     Announcement announcement) throws IOException {
+    public ResponseEntity<String> createAnnouncement(@RequestParam("files") List<MultipartFile> files,
+                                                     @RequestParam("title") String title,
+                                                     @RequestParam("description") String description) throws IOException {
+        if (files.size() > 20) {
+            return new ResponseEntity<>("Максимум 20 изображений можно загрузить.", HttpStatus.BAD_REQUEST);
+        }
 
+        Announcement announcement = new Announcement();
+        announcement.setTitle(title);
+        announcement.setDescription(description);
         announcementService.saveAnnouncement(announcement, files);
-        return "redirect:/";
+
+        return new ResponseEntity<>("Объявление создано успешно", HttpStatus.CREATED);
     }
 
-    @PostMapping("/announcement/delete/{id}")
-    public String deleteAnnouncement(@PathVariable Long id) {
-        announcementService.deleteAnnouncements(id);
-        return "redirect:/";
-    }
 
+    @DeleteMapping("/announcement/delete/{id}")
+    public ResponseEntity<String> deleteAnnouncement(@PathVariable Long id) {
+        try {
+            announcementService.deleteAnnouncements(id);
+            return new ResponseEntity<>("Объявление удалено", HttpStatus.OK);
+        } catch (EntityNotFoundException e) {
+            return new ResponseEntity<>("Объявление не найдено", HttpStatus.NOT_FOUND);
+        }
+    }
 }

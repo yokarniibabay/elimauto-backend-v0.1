@@ -3,6 +3,8 @@ package com.example.elimauto.services;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.repositories.AnnouncementRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,24 +53,28 @@ public class AnnouncementService {
 
         // Устанавливаем ID превью-картинки для сохраненного объявления
         if (!announcementFromDB.getImages().isEmpty()) {
-            announcementFromDB.setPreviewImageId(announcementFromDB.getImages().get(0).getId());
+            announcementFromDB.setPreviewImageId(announcementFromDB.getImages().getFirst().getId());
         }
 
         announcementRepository.save(announcementFromDB);
     }
 
     private Image toImageEntity(MultipartFile file) throws IOException {
-            Image image = new Image();
-            image.setName(file.getName());
-            image.setOriginalFileName(file.getOriginalFilename());
-            image.setContentType(file.getContentType());
-            image.setSize(file.getSize());
-            image.setBytes(file.getBytes());
-            return image;
+        Image image = new Image();
+        image.setName(file.getName());
+        image.setOriginalFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
+        image.setSize(file.getSize());
+        image.setBytes(file.getBytes());
+        return image;
     }
 
     public void deleteAnnouncements(Long id) {
-        announcementRepository.deleteById(id);
+        if (announcementRepository.existsById(id)) {
+            announcementRepository.deleteById(id);
+        } else {
+            throw new EntityNotFoundException("Announcement not found");
+        }
     }
 
     public Announcement getAnnouncementById(Long id) {
