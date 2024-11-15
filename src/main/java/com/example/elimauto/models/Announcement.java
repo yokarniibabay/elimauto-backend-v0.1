@@ -1,9 +1,11 @@
 package com.example.elimauto.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Value;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ public class Announcement {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY,
     mappedBy = "announcement")
+    @JsonManagedReference
     private List<Image> images = new ArrayList<>();
     private Long previewImageId;
     private LocalDateTime createdAt;

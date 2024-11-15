@@ -7,6 +7,7 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +19,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
+    private ImageService imageService;
+
+    @Autowired
+    public AnnouncementService(AnnouncementRepository announcementRepository, ImageService imageService) {
+        this.announcementRepository = announcementRepository;
+        this.imageService = imageService;
+    }
 
     public List<Announcement> listAnnouncements(String title) {
         if (title != null) return announcementRepository.findByTitle(title);
@@ -25,37 +33,32 @@ public class AnnouncementService {
     }
 
     public void saveAnnouncement(Announcement announcement, List<MultipartFile> files) throws IOException {
-        boolean isFirstImage = true;
         // Проверка на максимальное количество файлов
         if (files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
 
+        // Сохраняем объявление в базе данных перед сохранением изображений
+        Announcement announcementFromDB = announcementRepository.save(announcement);
+
+        // Логика сохранения изображений
+        boolean isFirstImage = true;
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                Image image = toImageEntity(file);
-
-                // Устанавливаем превью для первой загруженной картинки
-                if (isFirstImage) {
-                    image.setPreviewImage(true);
-                    isFirstImage = false;
-                }
-
-                announcement.addImageToAnnouncement(image);
+                // Сохраняем изображение через ImageService
+                Image image = imageService.saveImage(file, isFirstImage);
+                image.setAnnouncement(announcementFromDB); // Привязываем изображение к объявлению
+                imageService.saveImage(file, isFirstImage); // сохраняем через ImageService
+                isFirstImage = false;
             }
         }
 
+        // Логирование информации о сохранённом объявлении
         log.info("Saving new Announcement. Title: {}; Author: {}",
                 announcement.getTitle(),
                 announcement.getAuthor());
 
-        Announcement announcementFromDB = announcementRepository.save(announcement);
-
-        // Устанавливаем ID превью-картинки для сохраненного объявления
-        if (!announcementFromDB.getImages().isEmpty()) {
-            announcementFromDB.setPreviewImageId(announcementFromDB.getImages().getFirst().getId());
-        }
-
+        // Обновляем объявление, если были добавлены изображения
         announcementRepository.save(announcementFromDB);
     }
 

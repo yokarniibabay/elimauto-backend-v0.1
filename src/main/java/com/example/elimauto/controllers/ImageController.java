@@ -1,29 +1,33 @@
 package com.example.elimauto.controllers;
 
 import com.example.elimauto.models.Image;
-import com.example.elimauto.repositories.ImageRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.MediaType;
+import com.example.elimauto.services.ImageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.ByteArrayInputStream;
+import java.util.Optional;
 
 @RestController
-@RequiredArgsConstructor
+@RequestMapping("/api/images")
 public class ImageController {
-    private final ImageRepository imageRepository;
 
-    @GetMapping("/images/{id}")
-    private ResponseEntity<?> getImageById(@PathVariable Long id){
-        Image image = imageRepository.findById(id).orElse(null);
-        return ResponseEntity.ok()
-                .header("fileName", image.getOriginalFileName())
-                .contentType(MediaType.valueOf(image.getContentType()))
-                .contentLength(image.getSize())
-                .body(new InputStreamResource(new ByteArrayInputStream(image.getBytes())));
+    @Autowired
+    private ImageService imageService;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<byte[]> getImageById(@PathVariable Long id) {
+        Optional<Image> imageOptional = imageService.getImageById(id);
+
+        if (imageOptional.isPresent()) {
+            Image image = imageOptional.get();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", image.getContentType());
+            return new ResponseEntity<>(image.getBytes(), headers, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }
