@@ -33,25 +33,33 @@ public class AnnouncementService {
     }
 
     public void saveAnnouncement(Announcement announcement, List<MultipartFile> files) throws IOException {
-        // Проверка на максимальное количество файлов
         if (files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
 
-        // Сохраняем объявление в базе данных перед сохранением изображений
-        Announcement announcementFromDB = announcementRepository.save(announcement);
+        Announcement savedAnnouncement = announcementRepository.save(announcement);
 
-        // Логика сохранения изображений
         boolean isFirstImage = true;
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                // Сохраняем изображение через ImageService
-                Image image = imageService.saveImage(file, isFirstImage);
-                image.setAnnouncement(announcementFromDB); // Привязываем изображение к объявлению
-                imageService.saveImage(file, isFirstImage); // сохраняем через ImageService
+                // Передаем объект `savedAnnouncement` при сохранении изображения
+                imageService.saveImage(file, isFirstImage, savedAnnouncement);
                 isFirstImage = false;
             }
         }
+
+        if (!savedAnnouncement.getImages().isEmpty()) {
+            Long previewImageId = null;
+            for (Image image : savedAnnouncement.getImages()) {
+                if (image.isPreviewImage()) {
+                    previewImageId = image.getId();
+                    break; // Находим первое изображение с isPreviewImage = true и выходим из цикла
+                }
+            }
+            savedAnnouncement.setPreviewImageId(previewImageId);
+            announcementRepository.save(savedAnnouncement);
+        }
+
 
         // Логирование информации о сохранённом объявлении
         log.info("Saving new Announcement. Title: {}; Author: {}",
@@ -59,7 +67,7 @@ public class AnnouncementService {
                 announcement.getAuthor());
 
         // Обновляем объявление, если были добавлены изображения
-        announcementRepository.save(announcementFromDB);
+        announcementRepository.save(savedAnnouncement);
     }
 
     private Image toImageEntity(MultipartFile file) throws IOException {
@@ -68,7 +76,6 @@ public class AnnouncementService {
         image.setOriginalFileName(file.getOriginalFilename());
         image.setContentType(file.getContentType());
         image.setSize(file.getSize());
-        image.setBytes(file.getBytes());
         return image;
     }
 

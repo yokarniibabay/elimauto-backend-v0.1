@@ -31,10 +31,13 @@ public class Image {
 
     @Column(name = "isPreviewImage")
     private boolean isPreviewImage;
-    @Lob
-    private byte[] bytes;
+
+    //BASE64DATA
+    @Column(name = "data", columnDefinition = "longtext")
+    private String data;
 
     @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JsonBackReference
+    @JoinColumn(name = "announcement_id", nullable = false)
     private Announcement announcement;
 }

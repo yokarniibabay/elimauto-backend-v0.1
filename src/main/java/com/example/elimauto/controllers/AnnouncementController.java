@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -43,17 +44,24 @@ public class AnnouncementController {
     }
 
     @PostMapping("/announcement/create")
-    public ResponseEntity<String> createAnnouncement(@RequestParam("files") List<MultipartFile> files,
-                                                     @RequestParam("title") String title,
-                                                     @RequestParam("description") String description) throws IOException {
-        if (files.size() > 20) {
+    public ResponseEntity<String> createAnnouncement(@RequestParam("title") String title,
+                                                     @RequestParam("description") String description,
+                                                     @RequestParam("price") double price,
+                                                     @RequestParam("city") String city,
+                                                     @RequestParam("author") String author, // Или возможно, объект Author?
+                                                     @RequestParam("files") MultipartFile[] files) throws IOException {
+        if (files.length > 20) {
             return new ResponseEntity<>("Максимум 20 изображений можно загрузить.", HttpStatus.BAD_REQUEST);
         }
 
         Announcement announcement = new Announcement();
         announcement.setTitle(title);
         announcement.setDescription(description);
-        announcementService.saveAnnouncement(announcement, files);
+        announcement.setPrice(price);
+        announcement.setCity(city);
+        announcement.setAuthor(author); // Или соответствующая логика, если author - объект
+
+        announcementService.saveAnnouncement(announcement, Arrays.asList(files));
 
         return new ResponseEntity<>("Объявление создано успешно", HttpStatus.CREATED);
     }
