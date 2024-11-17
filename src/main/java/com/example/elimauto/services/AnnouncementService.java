@@ -7,11 +7,11 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,75 +19,82 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
-    private ImageService imageService;
+    private final ImageService imageService;
 
-    @Autowired
-    public AnnouncementService(AnnouncementRepository announcementRepository, ImageService imageService) {
-        this.announcementRepository = announcementRepository;
-        this.imageService = imageService;
-    }
-
+    /**
+     * Метод для получения списка объявлений с опциональной фильтрацией по названию.
+     */
     public List<Announcement> listAnnouncements(String title) {
-        if (title != null) return announcementRepository.findByTitle(title);
+        if (title != null && !title.isEmpty()) {
+            return announcementRepository.findByTitle(title);
+        }
         return announcementRepository.findAll();
     }
 
+    /**
+     * Сохранение нового объявления вместе с прикрепленными изображениями.
+     */
     public void saveAnnouncement(Announcement announcement, List<MultipartFile> files) throws IOException {
         if (files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
 
-        Announcement savedAnnouncement = announcementRepository.save(announcement);
-
+        List<Image> savedImages = new ArrayList<>(); // Список для хранения сохраненных изображений
         boolean isFirstImage = true;
-        for (MultipartFile file : files) {
-            if (!file.isEmpty()) {
-                // Передаем объект `savedAnnouncement` при сохранении изображения
-                imageService.saveImage(file, isFirstImage, savedAnnouncement);
-                isFirstImage = false;
-            }
-        }
 
-        if (!savedAnnouncement.getImages().isEmpty()) {
-            Long previewImageId = null;
-            for (Image image : savedAnnouncement.getImages()) {
-                if (image.isPreviewImage()) {
-                    previewImageId = image.getId();
-                    break; // Находим первое изображение с isPreviewImage = true и выходим из цикла
+        try {
+            // 1. Сначала сохраняем объявление
+            Announcement savedAnnouncement = announcementRepository.save(announcement);
+
+            // 2. Затем сохраняем изображения и устанавливаем связь с сохраненным объявлением
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    Image savedImage = imageService.saveImage(file, savedAnnouncement, isFirstImage); // Передаем уже сохраненное объявление
+                    savedImages.add(savedImage);
+                    isFirstImage = false;
                 }
             }
+            // Устанавливаем превью-изображение (можно оптимизировать, если нужно)
+            Long previewImageId = savedImages.stream()
+                    .filter(Image::isPreviewImage)
+                    .map(Image::getId)
+                    .findFirst()
+                    .orElse(null);
+
             savedAnnouncement.setPreviewImageId(previewImageId);
             announcementRepository.save(savedAnnouncement);
+
+
+            log.info("Saving new Announcement. Title: {}; Author: {}",
+                    announcement.getTitle(),
+                    announcement.getAuthor());
+
+        } catch (IOException | IllegalArgumentException e) {
+            // Обработка ошибок: удаление уже сохраненных изображений (если нужно)
+            for (Image image : savedImages) {
+                imageService.deleteImage(image);
+            }
+            throw new IOException("Ошибка при сохранении объявления или изображений: " + e.getMessage(), e);
         }
-
-
-        // Логирование информации о сохранённом объявлении
-        log.info("Saving new Announcement. Title: {}; Author: {}",
-                announcement.getTitle(),
-                announcement.getAuthor());
-
-        // Обновляем объявление, если были добавлены изображения
-        announcementRepository.save(savedAnnouncement);
     }
 
-    private Image toImageEntity(MultipartFile file) throws IOException {
-        Image image = new Image();
-        image.setName(file.getName());
-        image.setOriginalFileName(file.getOriginalFilename());
-        image.setContentType(file.getContentType());
-        image.setSize(file.getSize());
-        return image;
-    }
+    public void deleteAnnouncement(Long id) throws IOException {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Announcement not found"));
 
-    public void deleteAnnouncements(Long id) {
-        if (announcementRepository.existsById(id)) {
-            announcementRepository.deleteById(id);
-        } else {
-            throw new EntityNotFoundException("Announcement not found");
+        // Удаляем изображения, привязанные к объявлению
+        List<Image> images = announcement.getImages();
+        for (Image image : images) {
+            imageService.deleteImage(image);
         }
+
+        // Удаляем само объявление
+        announcementRepository.delete(announcement);
+        log.info("Deleted announcement with ID: {}", id);
     }
 
     public Announcement getAnnouncementById(Long id) {
-        return announcementRepository.findById(id).orElse(null);
+        return announcementRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("Announcement not found"));
     }
 }

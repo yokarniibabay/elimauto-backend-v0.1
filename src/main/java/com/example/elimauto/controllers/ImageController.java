@@ -1,16 +1,22 @@
 package com.example.elimauto.controllers;
 
-import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.repositories.ImageRepository;
 import com.example.elimauto.services.AnnouncementService;
+import com.example.elimauto.services.FileStorageService;
 import com.example.elimauto.services.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,55 +26,62 @@ import java.util.Optional;
 public class ImageController {
     private final ImageRepository imageRepository;
     private final AnnouncementService announcementService;
+    private final FileStorageService fileStorageService;
 
     @Autowired
     private ImageService imageService;
 
     @GetMapping("/announcement/{id}/images")
     public ResponseEntity<List<String>> getImages(@PathVariable Long id) {
-        List<String> base64Images = imageService.getBase64ImagesByAnnouncementId(id);
-        return ResponseEntity.ok(base64Images);
+        List<Image> images = imageService.getImagesByAnnouncementId(id);
+
+        List<String> imageUrls = images.stream()
+                .map(image -> "/api/images/" + image.getId()) // Генерация URL для каждого изображения
+                .toList();
+
+        return ResponseEntity.ok(imageUrls);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getImage(@PathVariable Long id) {
+    public ResponseEntity<ByteArrayResource> getImage(@PathVariable Long id) throws IOException {
         Image image = imageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Image not found"));
 
-        String base64Image = "data:" + image.getContentType() + ";base64," + image.getData();
+        Path path = fileStorageService.getStorageDirectory().resolve(image.getPath());
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-        return ResponseEntity.ok(base64Image);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(image.getContentType()))
+                .body(resource);
     }
 
     @GetMapping("/image/{id}")
-    public ResponseEntity<String> getImageById(@PathVariable Long id) {
+    public ResponseEntity<ByteArrayResource> getImageById(@PathVariable Long id) throws IOException {
         Optional<Image> imageOptional = imageService.getImageById(id);
 
-        return imageOptional
-                .map(image -> new ResponseEntity<>(
-                        "data:" + image.getContentType() + ";base64," + image.getData(),
-                        HttpStatus.OK
-                ))
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        if (imageOptional.isPresent()) {
+            Image image = imageOptional.get();
+            Path imagePath = Paths.get(image.getPath());
+            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(imagePath));
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(image.getContentType()))
+                    .body(resource);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/preview/{announcementId}")
-    public ResponseEntity<String> getPreviewImage(@PathVariable Long announcementId) {
-        // Получаем объявление
-        Announcement announcement = announcementService.getAnnouncementById(announcementId);
+    public ResponseEntity<ByteArrayResource> getPreviewImage(@PathVariable Long announcementId) throws IOException {
+        Image previewImage = imageRepository.findFirstByAnnouncementIdAndIsPreviewImageTrue(announcementId)
+                .orElseThrow(() -> new RuntimeException("Preview image not found"));
 
-        if (announcement.getPreviewImageId() == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Превью изображение не установлено для данного объявления");
-        }
+        Path path = fileStorageService.getStorageDirectory().resolve(previewImage.getPath());
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-        // Получаем изображение по previewImageId
-        Optional<Image> previewImage = imageService.getImageById(announcement.getPreviewImageId());
-
-        return previewImage.map(image -> ResponseEntity.ok(image.getData()))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("Изображение для превью не найдено"));
-
-        // Возвращаем Base64 строку изображения
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(previewImage.getContentType()))
+                .body(resource);
     }
 }

@@ -20,21 +20,14 @@ public class Image {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "originalFileName")
-    private String originalFileName;
-
-    @Column(name = "size")
-    private Long size;
-
-    @Column(name = "contentType")
+    @Column(name = "content_type")
     private String contentType;
 
-    @Column(name = "isPreviewImage")
+    @Column(name = "is_preview_image")
     private boolean isPreviewImage;
 
-    //BASE64DATA
-    @Column(name = "data", columnDefinition = "longtext")
-    private String data;
+    @Column(name = "path", nullable = false)
+    private String path;
 
     @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JsonBackReference

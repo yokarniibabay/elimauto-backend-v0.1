@@ -68,9 +68,9 @@ public class AnnouncementController {
 
 
     @DeleteMapping("/announcement/delete/{id}")
-    public ResponseEntity<String> deleteAnnouncement(@PathVariable Long id) {
+    public ResponseEntity<String> deleteAnnouncement(@PathVariable Long id) throws IOException {
         try {
-            announcementService.deleteAnnouncements(id);
+            announcementService.deleteAnnouncement(id);
             return new ResponseEntity<>("Объявление удалено", HttpStatus.OK);
         } catch (EntityNotFoundException e) {
             return new ResponseEntity<>("Объявление не найдено", HttpStatus.NOT_FOUND);
