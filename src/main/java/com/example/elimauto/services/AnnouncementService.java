@@ -83,10 +83,7 @@ public class AnnouncementService {
                 .orElseThrow(() -> new EntityNotFoundException("Announcement not found"));
 
         // Удаляем изображения, привязанные к объявлению
-        List<Image> images = announcement.getImages();
-        for (Image image : images) {
-            imageService.deleteImage(image);
-        }
+        imageService.deleteImagesByAnnouncement(announcement);
 
         // Удаляем само объявление
         announcementRepository.delete(announcement);

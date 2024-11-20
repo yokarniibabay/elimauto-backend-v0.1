@@ -17,8 +17,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 @Service
 public class ImageService {
+    private static final List<String> SUPPORTED_IMAGE_TYPES =
+            List.of("image/jpeg",
+            "image/png",
+            "image/heic",
+            "image/webp");
     private final FileStorageService fileStorageService;
     private final ImageRepository imageRepository;
 
@@ -30,38 +36,29 @@ public class ImageService {
 
     public Image saveImage(MultipartFile file, Announcement announcement, boolean isPreview)
             throws IOException {
-        String contentType = file.getContentType();
-        if (!List.of("image/jpeg", "image/png", "image/heic", "image/webp").contains(contentType)) {
-            throw new IllegalArgumentException("Unsupported file type: " + contentType);
-        }
+        // 1. Валидация файла
+        validateFile(file);
 
-        byte[] processedBytes = convertToJpeg(file);
-        processedBytes = removeMetadata(processedBytes);
+        // 2. Обработка файла (конвертация и удаление метаданных)
+        byte[] processedBytes = processImage(file);
 
+        // 3. Генерация имени файла
         String fileName = UUID.randomUUID() + ".jpeg";
 
+        // 4. Сохранение файла в файловую систему
         try (ByteArrayInputStream bais = new ByteArrayInputStream(processedBytes)) {
-            fileStorageService.storeFile(bais, fileName); // Используем FileStorageService
+            fileStorageService.storeFile(bais, fileName);
         }
 
+        // 5. Сохранение информации об изображении в БД
         Image image = new Image();
         image.setName(fileName);
         image.setContentType("image/jpeg");
-        image.setPath(fileName); // Храним только имя файла
+        image.setPath(fileName); // Храним только путь до файла
         image.setPreviewImage(isPreview);
         image.setAnnouncement(announcement);
 
         return imageRepository.save(image);
-    }
-
-    private byte[] convertToJpeg(MultipartFile file) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Thumbnails.of(file.getInputStream())
-                .size(1920, 1080) // Уменьшение до FullHD
-                .outputQuality(0.9f)
-                .outputFormat("jpeg") // Конвертация в JPEG
-                .toOutputStream(outputStream);
-        return outputStream.toByteArray();
     }
 
     // Удаление метаданных
@@ -70,6 +67,36 @@ public class ImageService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(image, "jpeg", outputStream); // Пересохранение удаляет метаданные
         return outputStream.toByteArray();
+    }
+
+    public byte[] processImage(MultipartFile file) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Thumbnails.of(file.getInputStream())
+                .size(1920, 1080) // Уменьшение размера
+                .outputQuality(0.9f)
+                .outputFormat("jpeg") // Конвертация в JPEG
+                .toOutputStream(outputStream);
+        return removeMetadata(outputStream.toByteArray());
+    }
+
+    public static void validateFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (!SUPPORTED_IMAGE_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("Unsupported file type: " + contentType);
+        }
+
+        if (!isValidImageFormat(file)) {
+            throw new IllegalArgumentException("Файл не является изображением");
+        }
+    }
+
+    private static boolean isValidImageFormat(MultipartFile file) {
+        try {
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            return image != null;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     public Optional<Image> getImageById(Long id) {
@@ -83,5 +110,12 @@ public class ImageService {
     public void deleteImage(Image image) throws IOException {
         fileStorageService.deleteFile(image.getPath());
         imageRepository.delete(image);
+    }
+
+    public void deleteImagesByAnnouncement(Announcement announcement) throws IOException {
+        List<Image> images = imageRepository.findByAnnouncementId(announcement.getId());
+        for (Image image : images) {
+            deleteImage(image);
+        }
     }
 }
