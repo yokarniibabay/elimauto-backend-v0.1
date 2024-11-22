@@ -31,7 +31,7 @@ public class User implements UserDetails {
     private String name;
 
     @Column(name = "enabled", nullable = false)
-    private Boolean enabled = true;
+    private Boolean enabled = false;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
