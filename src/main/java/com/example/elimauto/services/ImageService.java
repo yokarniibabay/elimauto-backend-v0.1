@@ -36,47 +36,41 @@ public class ImageService {
 
     public Image saveImage(MultipartFile file, Announcement announcement, boolean isPreview)
             throws IOException {
-        // 1. Валидация файла
         validateFile(file);
 
-        // 2. Обработка файла (конвертация и удаление метаданных)
         byte[] processedBytes = processImage(file);
 
-        // 3. Генерация имени файла
         String fileName = UUID.randomUUID() + ".jpeg";
 
-        // 4. Сохранение файла в файловую систему
         try (ByteArrayInputStream bais = new ByteArrayInputStream(processedBytes)) {
             fileStorageService.storeFile(bais, fileName);
         }
 
-        // 5. Сохранение информации об изображении в БД
         Image image = new Image();
         image.setName(fileName);
         image.setContentType("image/jpeg");
-        image.setPath(fileName); // Храним только путь до файла
+        image.setPath(fileName);
         image.setPreviewImage(isPreview);
         image.setAnnouncement(announcement);
 
         return imageRepository.save(image);
     }
 
-    // Удаление метаданных
-    public byte[] removeMetadata(byte[] imageBytes) throws IOException {
-        BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ImageIO.write(image, "jpeg", outputStream); // Пересохранение удаляет метаданные
-        return outputStream.toByteArray();
-    }
-
     public byte[] processImage(MultipartFile file) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Thumbnails.of(file.getInputStream())
-                .size(1920, 1080) // Уменьшение размера
+                .size(1920, 1080)
                 .outputQuality(0.9f)
-                .outputFormat("jpeg") // Конвертация в JPEG
+                .outputFormat("jpeg")
                 .toOutputStream(outputStream);
         return removeMetadata(outputStream.toByteArray());
+    }
+
+    public byte[] removeMetadata(byte[] imageBytes) throws IOException {
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpeg", outputStream);
+        return outputStream.toByteArray();
     }
 
     public static void validateFile(MultipartFile file) {

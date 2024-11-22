@@ -17,10 +17,9 @@ public class FileStorageConfig {
 
     @Bean
     public FileStorageService fileStorageService() throws IOException {
-        // Создаем абсолютный путь относительно корня проекта
         Path path = Paths.get(storagePath).toAbsolutePath().normalize();
         Files.createDirectories(path);
-        System.out.println("Storage path: " + path); // для отладки
+        System.out.println("Storage path: " + path); // для отладки (убрать в будущем)
         return new FileStorageService(path);
     }
 }

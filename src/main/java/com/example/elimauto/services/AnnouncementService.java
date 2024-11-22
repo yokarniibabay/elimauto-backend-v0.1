@@ -2,11 +2,13 @@ package com.example.elimauto.services;
 
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
+import com.example.elimauto.models.User;
 import com.example.elimauto.repositories.AnnouncementRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,9 +23,6 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final ImageService imageService;
 
-    /**
-     * Метод для получения списка объявлений с опциональной фильтрацией по названию.
-     */
     public List<Announcement> listAnnouncements(String title) {
         if (title != null && !title.isEmpty()) {
             return announcementRepository.findByTitle(title);
@@ -31,9 +30,6 @@ public class AnnouncementService {
         return announcementRepository.findAll();
     }
 
-    /**
-     * Сохранение нового объявления вместе с прикрепленными изображениями.
-     */
     public void saveAnnouncement(Announcement announcement, List<MultipartFile> files) throws IOException {
         if (files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
@@ -43,34 +39,44 @@ public class AnnouncementService {
         boolean isFirstImage = true;
 
         try {
-            // 1. Сначала сохраняем объявление
+            // Получение текущего пользователя из контекста Spring Security
+            User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (currentUser == null) {
+                throw new IllegalArgumentException("Текущий пользователь не найден.");
+            }
+
+            // Установка текущего пользователя как автора объявления
+            announcement.setAuthor(currentUser);
+
+            // Сохранение объявления
             Announcement savedAnnouncement = announcementRepository.save(announcement);
 
-            // 2. Затем сохраняем изображения и устанавливаем связь с сохраненным объявлением
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
-                    Image savedImage = imageService.saveImage(file, savedAnnouncement, isFirstImage); // Передаем уже сохраненное объявление
+                    Image savedImage = imageService.saveImage(file, savedAnnouncement, isFirstImage);
                     savedImages.add(savedImage);
                     isFirstImage = false;
                 }
             }
-            // Устанавливаем превью-изображение (можно оптимизировать, если нужно)
+
+            // Установка превью-изображения
             Long previewImageId = savedImages.stream()
                     .filter(Image::isPreviewImage)
                     .map(Image::getId)
                     .findFirst()
                     .orElse(null);
-
             savedAnnouncement.setPreviewImageId(previewImageId);
+
+            // Сохранение объявления с обновленным previewImageId
             announcementRepository.save(savedAnnouncement);
 
-
+            // Логирование
             log.info("Saving new Announcement. Title: {}; Author: {}",
                     announcement.getTitle(),
-                    announcement.getAuthor());
+                    currentUser.getName());
 
         } catch (IOException | IllegalArgumentException e) {
-            // Обработка ошибок: удаление уже сохраненных изображений (если нужно)
+            // Удаление изображений в случае ошибки
             for (Image image : savedImages) {
                 imageService.deleteImage(image);
             }
@@ -82,10 +88,8 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Announcement not found"));
 
-        // Удаляем изображения, привязанные к объявлению
         imageService.deleteImagesByAnnouncement(announcement);
 
-        // Удаляем само объявление
         announcementRepository.delete(announcement);
         log.info("Deleted announcement with ID: {}", id);
     }

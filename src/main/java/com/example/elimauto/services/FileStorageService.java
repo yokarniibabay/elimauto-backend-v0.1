@@ -29,7 +29,6 @@ public class FileStorageService {
             throw new IllegalArgumentException("File name is null or empty");
         }
 
-        // Получаем только имя файла для предотвращения атаки через относительные пути
         fileName = Path.of(fileName).getFileName().toString();
 
         Path destination = storageDirectory.resolve(fileName).normalize();
@@ -45,19 +44,12 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Удаляет файл из директории хранения.
-     *
-     * @param fileName Имя файла для удаления.
-     * @throws IOException Если произошла ошибка ввода-вывода.
-     * @throws java.nio.file.NoSuchFileException если файл не существует.
-     */
+
     public void deleteFile(String fileName) throws IOException {
         if (fileName == null || fileName.isEmpty()) {
             throw new IllegalArgumentException("File name is null or empty");
         }
 
-        // Получаем только имя файла
         fileName = Path.of(fileName).getFileName().toString();
 
         Path fileToDelete = storageDirectory.resolve(fileName).normalize();
