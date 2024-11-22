@@ -1,6 +1,7 @@
 package com.example.elimauto.controllers;
 
 import com.example.elimauto.models.Announcement;
+import com.example.elimauto.models.User;
 import com.example.elimauto.services.AnnouncementService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -48,7 +49,7 @@ public class AnnouncementController {
                                                      @RequestParam("description") String description,
                                                      @RequestParam("price") double price,
                                                      @RequestParam("city") String city,
-                                                     @RequestParam("author") String author, // Или возможно, объект Author?
+                                                     @RequestParam("author") User author,
                                                      @RequestParam("files") MultipartFile[] files) throws IOException {
         if (files.length > 20) {
             return new ResponseEntity<>("Максимум 20 изображений можно загрузить.", HttpStatus.BAD_REQUEST);
@@ -59,7 +60,7 @@ public class AnnouncementController {
         announcement.setDescription(description);
         announcement.setPrice(price);
         announcement.setCity(city);
-        announcement.setAuthor(author); // Или соответствующая логика, если author - объект
+        announcement.setAuthor(author);
 
         announcementService.saveAnnouncement(announcement, Arrays.asList(files));
 
