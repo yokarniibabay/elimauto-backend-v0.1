@@ -25,18 +25,18 @@ public class User implements UserDetails {
     private Long id;
 
     @NotBlank(message = "Номер телефона обязателен!")
-    @Pattern(
-            regexp = "^(\\+?\\d{1,3})?\\d{10}$",
-            message = "Номер телефона должен быть в формате +1234567890 или 1234567890"
-    )
     @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
 
     @ToString.Exclude
-    @NotBlank(message = "Пароль обязателен!")
-    @Size(min = 8, max = 20, message = "Пароль должен быть длиной от 6 до 20 символов")
+//    @NotBlank(message = "Пароль обязателен!")
+//    @Size(min = 8, max = 20, message = "Пароль должен быть длиной от 6 до 20 символов")
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Transient
+    @Size(min = 8, max = 20, message = "Пароль должен быть длиной от 6 до 20 символов")
+    private String rawPassword;
 
     @NotBlank(message = "Имя не может быть пустым!")
     @Column(name = "name")
