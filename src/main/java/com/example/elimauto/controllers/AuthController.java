@@ -41,7 +41,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String phoneNumber, @RequestParam String password) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> requestBody) {
+        String phoneNumber = requestBody.get("phoneNumber");
+        String password = requestBody.get("password");
         var user = userRepository.findByPhoneNumber(phoneNumber);
 
         if (user.isEmpty() || !user.get().getEnabled()) {
