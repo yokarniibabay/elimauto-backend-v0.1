@@ -1,104 +1,52 @@
 package com.example.elimauto.controllers;
 
-import com.example.elimauto.models.Role;
 import com.example.elimauto.models.User;
-import com.example.elimauto.repositories.RoleRepository;
-import com.example.elimauto.repositories.UserRepository;
-import com.example.elimauto.security.JWTService;
-import com.example.elimauto.services.PhoneNumberService;
-import jakarta.validation.Valid;
+import com.example.elimauto.services.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
-    private final PhoneNumberService phoneNumberService;
+    private final UserService userService;
 
-    @Autowired
-    public AuthController(UserRepository userRepository,
-                          RoleRepository roleRepository,
-                          PasswordEncoder passwordEncoder,
-                          JWTService jwtService,
-                          PhoneNumberService phoneNumberService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.phoneNumberService = phoneNumberService;
+    public AuthController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> requestBody) {
-        String phoneNumber = requestBody.get("phoneNumber");
-        String password = requestBody.get("password");
-        var user = userRepository.findByPhoneNumber(phoneNumber);
-
-        if (user.isEmpty() || !user.get().getEnabled()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не найден или не активирован");
+    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
+        try {
+            String phoneNumber = requestBody.get("phoneNumber");
+            String password = requestBody.get("password");
+            String token = userService.loginUser(phoneNumber, password);
+            return ResponseEntity.ok(Map.of("token", token));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         }
-
-        if (!passwordEncoder.matches(password, user.get().getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверный пароль");
-        }
-        String token = jwtService.generateToken(user.get());
-
-        return ResponseEntity.ok(Map.of("token", token));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody User user, BindingResult result) {
-        if (user.getRawPassword() == null || user.getRawPassword().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Пароль не может быть пустым");
+    public ResponseEntity<String> register(@RequestBody User user) {
+        try {
+            String message = userService.registerUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(message);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        if (result.hasErrors()) {
-            String errors = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining(", "));
-            return ResponseEntity.badRequest().body("Ошибки валидации: " + errors);
-        }
-        String normalizedPhoneNumber = phoneNumberService.normalizePhoneNumber(user.getPhoneNumber());
-
-        if (userRepository.findByPhoneNumber(normalizedPhoneNumber).isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Пользователь с таким номером телефона уже зарегистрирован.");
-        }
-
-        user.setPhoneNumber(normalizedPhoneNumber);
-        user.setPassword(passwordEncoder.encode(user.getRawPassword()));
-        user.setRawPassword(null);
-        user.setName(user.getUsername());
-        user.setEnabled(true);
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new IllegalStateException("Роль ROLE_USER не найдена в базе данных"));
-        user.setRoles(Set.of(userRole));
-
-        userRepository.save(user);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body("Пользователь успешно зарегистрирован");
     }
 
-    @GetMapping("/check-phone/{phoneNumber}")
-    public ResponseEntity<Boolean> checkPhoneNumber(@PathVariable String phoneNumber) {
-        boolean exists = userRepository.findByPhoneNumber(phoneNumber).isPresent();
-        return ResponseEntity.ok(exists);
-    }
+//    @GetMapping("/check-phone/{phoneNumber}")
+//    public ResponseEntity<Boolean> checkPhoneNumber(@PathVariable String phoneNumber) {
+//        boolean exists = userRepository.findByPhoneNumber(phoneNumber).isPresent();
+//        return ResponseEntity.ok(exists);
+//    }
 
 //    @PostMapping("/register")
 //    public String handleRegistration(@ModelAttribute User user, Model model) {
