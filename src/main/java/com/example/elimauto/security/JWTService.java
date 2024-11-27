@@ -32,7 +32,7 @@ public class JWTService {
         String name = user.getName();
         return Jwts.builder()
                 .setSubject(user.getPhoneNumber())
-                .claim("roles", roles)
+                .claim("role", roles)
                 .claim("name", name)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
