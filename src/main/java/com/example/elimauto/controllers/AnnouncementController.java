@@ -1,9 +1,12 @@
 package com.example.elimauto.controllers;
 
+import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.models.Announcement;
+import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
 import com.example.elimauto.services.AnnouncementService;
 
+import com.example.elimauto.services.ImageService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -21,18 +24,40 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/announcement")
 @RequiredArgsConstructor
 public class AnnouncementController {
     private final AnnouncementService announcementService;
+    private final ImageService imageService;
 
 
-    @GetMapping("/announcements")
-    public ResponseEntity<List<Announcement>> getAnnouncements(@RequestParam(name = "title", required = false) String title) {
-        List<Announcement> announcements = announcementService.listAnnouncements(title);
-        return new ResponseEntity<>(announcements, HttpStatus.OK);
+    @GetMapping
+    public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements() {
+        List<Announcement> announcements = announcementService.getAllAnnouncements();
+        List<AnnouncementDTO> announcementDTOs = announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(announcementDTOs);
+    }
+
+    private AnnouncementDTO convertToDto(Announcement announcement) {
+        AnnouncementDTO dto = new AnnouncementDTO();
+        dto.setId(announcement.getId());
+        dto.setTitle(announcement.getTitle());
+        dto.setDescription(announcement.getDescription());
+        dto.setPrice(announcement.getPrice());
+        dto.setCity(announcement.getCity());
+        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Unknown"); // Обработка null
+        Long previewImageId = announcement.getPreviewImageId();
+        if (previewImageId != null) {
+            Optional<Image> previewImage = imageService.getImageById(previewImageId);
+            dto.setPreviewImage(previewImage.map(Image::isPreviewImage).orElse(false)); // Обработка null
+        }
+        return dto;
     }
 
     @GetMapping("/{id}")
@@ -49,22 +74,15 @@ public class AnnouncementController {
                                                      @RequestParam("description") String description,
                                                      @RequestParam("price") double price,
                                                      @RequestParam("city") String city,
-                                                     @RequestParam("author") User author,
-                                                     @RequestParam("files") MultipartFile[] files) throws IOException {
-        if (files.length > 20) {
-            return new ResponseEntity<>("Максимум 20 изображений можно загрузить.", HttpStatus.BAD_REQUEST);
+                                                     @RequestParam("files") MultipartFile[] files) {
+        try {
+            announcementService.createAnnouncement(title, description, price, city, Arrays.asList(files));
+            return ResponseEntity.status(HttpStatus.CREATED).body("Объявление создано успешно");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при сохранении объявления");
         }
-
-        Announcement announcement = new Announcement();
-        announcement.setTitle(title);
-        announcement.setDescription(description);
-        announcement.setPrice(price);
-        announcement.setCity(city);
-        announcement.setAuthor(author);
-
-        announcementService.saveAnnouncement(announcement, Arrays.asList(files));
-
-        return new ResponseEntity<>("Объявление создано успешно", HttpStatus.CREATED);
     }
 
 

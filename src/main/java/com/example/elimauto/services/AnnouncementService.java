@@ -30,27 +30,45 @@ public class AnnouncementService {
         return announcementRepository.findAll();
     }
 
-    public void saveAnnouncement(Announcement announcement, List<MultipartFile> files) throws IOException {
+    public List<Announcement> getAllAnnouncements() {
+        return announcementRepository.findAll();
+    }
+
+    public void createAnnouncement(String title,
+                                   String description,
+                                   double price,
+                                   String city,
+                                   List<MultipartFile> files) throws IOException {
         if (files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
 
-        List<Image> savedImages = new ArrayList<>(); // Список для хранения сохраненных изображений
+        List<Image> savedImages = new ArrayList<>();
         boolean isFirstImage = true;
 
-        try {
-            // Получение текущего пользователя из контекста Spring Security
-            User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (currentUser == null) {
-                throw new IllegalArgumentException("Текущий пользователь не найден.");
-            }
+        // Создаем объявление
+        Announcement announcement = new Announcement();
+        announcement.setTitle(title);
+        announcement.setDescription(description);
+        announcement.setPrice(price);
+        announcement.setCity(city);
 
-            // Установка текущего пользователя как автора объявления
+        try {
+            // Получаем текущего пользователя из контекста безопасности.  Добавлена проверка на null!
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (!(principal instanceof User)) {
+                throw new IllegalStateException("Не удалось получить текущего пользователя.  Проверьте аутентификацию.");
+            }
+            User currentUser = (User) principal;
+
+
+            // Устанавливаем текущего пользователя как автора.  Проверка не нужна, так как мы уже проверили выше
             announcement.setAuthor(currentUser);
 
-            // Сохранение объявления
+            // Сохраняем объявление
             Announcement savedAnnouncement = announcementRepository.save(announcement);
 
+            // Сохраняем изображения
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
                     Image savedImage = imageService.saveImage(file, savedAnnouncement, isFirstImage);
@@ -59,7 +77,7 @@ public class AnnouncementService {
                 }
             }
 
-            // Установка превью-изображения
+            // Устанавливаем preview-изображение
             Long previewImageId = savedImages.stream()
                     .filter(Image::isPreviewImage)
                     .map(Image::getId)
@@ -67,20 +85,14 @@ public class AnnouncementService {
                     .orElse(null);
             savedAnnouncement.setPreviewImageId(previewImageId);
 
-            // Сохранение объявления с обновленным previewImageId
+            // Сохраняем объявление с обновленным previewImageId
             announcementRepository.save(savedAnnouncement);
-
-            // Логирование
-            log.info("Saving new Announcement. Title: {}; Author: {}",
-                    announcement.getTitle(),
-                    currentUser.getName());
-
-        } catch (IOException | IllegalArgumentException e) {
-            // Удаление изображений в случае ошибки
+        } catch (IOException | IllegalStateException e) { // Изменено на IllegalStateException
+            // Удаляем загруженные изображения при ошибке
             for (Image image : savedImages) {
                 imageService.deleteImage(image);
             }
-            throw new IOException("Ошибка при сохранении объявления или изображений: " + e.getMessage(), e);
+            throw e;
         }
     }
 

@@ -32,29 +32,34 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain chain)
             throws IOException, ServletException {
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        String token = authHeader.substring(7);
-        String phoneNumber = jwtService.extractClaims(token).getSubject();
-
-        if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var user = userRepository.findByPhoneNumber(phoneNumber);
-
-            if (user.isPresent() && jwtService.isTokenValid(token, phoneNumber)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(user.get(), null, user.get().getAuthorities());
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        String path = request.getServletPath();
+        System.out.println("Processing request to: " + path);
+        chain.doFilter(request, response);
+        // Проверяем только защищённые маршруты
+        if (!shouldNotFilter(request)) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                String phoneNumber = jwtService.extractClaims(token).getSubject();
+                if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    var user = userRepository.findByPhoneNumber(phoneNumber);
+                    if (user.isPresent() && jwtService.isTokenValid(token, phoneNumber)) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(user.get(), null, user.get().getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                }
             }
         }
 
         chain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.startsWith("/auth/") || path.startsWith("/announcement/");
     }
 }
 
