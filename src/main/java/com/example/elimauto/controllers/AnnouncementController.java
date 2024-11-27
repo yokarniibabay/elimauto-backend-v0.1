@@ -2,13 +2,13 @@ package com.example.elimauto.controllers;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.models.Announcement;
-import com.example.elimauto.models.Image;
 import com.example.elimauto.services.AnnouncementService;
 
 import com.example.elimauto.services.ImageService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,9 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/announcement")
 @RequiredArgsConstructor
@@ -34,12 +33,11 @@ public class AnnouncementController {
     private final ImageService imageService;
 
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements() {
-        List<AnnouncementDTO> announcementDTOs = announcementService.getAllAnnouncements().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(announcementDTOs);
+        log.info("Fetching all announcements from the database.");
+        List<AnnouncementDTO> announcements = announcementService.getAllAnnouncements();
+        return ResponseEntity.ok(announcements);
     }
 
     private AnnouncementDTO convertToDto(Announcement announcement) {
@@ -49,22 +47,28 @@ public class AnnouncementController {
         dto.setDescription(announcement.getDescription());
         dto.setPrice(announcement.getPrice());
         dto.setCity(announcement.getCity());
-        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Unknown"); // Обработка null
-        Long previewImageId = announcement.getPreviewImageId();
-        if (previewImageId != null) {
-            Optional<Image> previewImage = imageService.getImageById(previewImageId);
-            dto.setPreviewImage(previewImage.map(Image::isPreviewImage).orElse(false)); // Обработка null
+        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Unknown");
+
+        log.info("Preview Image ID for announcement {}: {}", announcement.getId(), announcement.getPreviewImageId());
+        // Установим превью-изображение
+        if (announcement.getPreviewImageId() != null) {
+            dto.setPreviewImageUrl(
+                    "/api/image/preview/" + announcement.getPreviewImageId()
+            ); // URL для загрузки превью
         }
+
         return dto;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Announcement> getAnnouncementInfo(@PathVariable Long id) {
-        Announcement announcement = announcementService.getAnnouncementById(id);
-        if (announcement == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id) {
+        try {
+            Announcement announcement = announcementService.getAnnouncementById(id);
+            AnnouncementDTO announcementDTO = convertToDto(announcement);
+            return ResponseEntity.ok(announcementDTO);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
-        return new ResponseEntity<>(announcement, HttpStatus.OK);
     }
 
     @PostMapping("/create")

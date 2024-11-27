@@ -6,7 +6,6 @@ import com.example.elimauto.security.filters.JWTAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,29 +41,32 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable()) // Отключаем CSRF (для REST API)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Открытые маршруты авторизации
-                        .requestMatchers("/announcement/**").permitAll() // Доступ к просмотру объявлений
-                        .requestMatchers("/announcement/create").authenticated() // Создание доступно только авторизованным
+                        .requestMatchers("/auth/**").permitAll() // Регистрация и вход доступны всем
+                        .requestMatchers("/announcement/**").permitAll() // Главная страница объявлений доступна всем
+                        .requestMatchers("/api/image/**").permitAll()
+                        .requestMatchers("/announcement/create").authenticated() // Создание объявления только для авторизованных
+                        .requestMatchers("/moderation/**").hasRole("MODERATOR") // Роуты для модераторов
+                        .requestMatchers("/admin/**").hasRole("ADMIN") // Роуты для администраторов
                         .anyRequest().authenticated() // Все остальные маршруты требуют авторизации
                 )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Используем JWT, сессии не храним
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint()) // Если пользователь не авторизован
+                        .accessDeniedHandler(new CustomAccessDeniedHandler()) // Если у пользователя недостаточно прав
                 )
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Добавляем фильтр JWT
                 .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://127.0.0.1:5500");
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
-        configuration.setAllowCredentials(true);
+        configuration.addAllowedOrigin("http://127.0.0.1:5500"); // Ваш фронтенд
+        configuration.addAllowedMethod("*"); // Все HTTP-методы
+        configuration.addAllowedHeader("*"); // Все заголовки
+        configuration.setAllowCredentials(true); // Для токенов
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
