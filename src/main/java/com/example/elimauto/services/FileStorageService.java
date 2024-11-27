@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 @Slf4j
@@ -59,5 +60,9 @@ public class FileStorageService {
             log.error("Failed to delete file: {}", fileName, e);
             throw e;
         }
+    }
+
+    public Path getStorageDirectory() {
+        return Paths.get("images_to_save"); // Убедитесь, что папка существует
     }
 }

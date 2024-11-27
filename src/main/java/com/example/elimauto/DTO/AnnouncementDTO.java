@@ -11,10 +11,6 @@ public class AnnouncementDTO {
     private String description;
     private double price;
     private String city;
-    private String authorName; //  Имя автора, а не сам объект User
-    private boolean isPreviewImage = false;
-
-    public boolean isPreviewImage() {
-        return isPreviewImage;
-    }
+    private String authorName;
+    private String previewImageUrl; // URL превью изображения
 }

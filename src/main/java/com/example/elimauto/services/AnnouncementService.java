@@ -1,5 +1,6 @@
 package com.example.elimauto.services;
 
+import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -30,8 +32,28 @@ public class AnnouncementService {
         return announcementRepository.findAll();
     }
 
-    public List<Announcement> getAllAnnouncements() {
-        return announcementRepository.findAll();
+    public List<AnnouncementDTO> getAllAnnouncements() {
+        return announcementRepository.findAll().stream()
+                .map(announcement -> {
+                    AnnouncementDTO dto = new AnnouncementDTO();
+                    dto.setId(announcement.getId());
+                    dto.setTitle(announcement.getTitle());
+                    dto.setDescription(announcement.getDescription());
+                    dto.setPrice(announcement.getPrice());
+                    dto.setCity(announcement.getCity());
+                    dto.setAuthorName(
+                            announcement.getAuthor() != null
+                                    ? announcement.getAuthor().getName()
+                                    : "Anonymous"
+                    );
+                    dto.setPreviewImageUrl(
+                            announcement.getPreviewImageId() != null
+                                    ? "/images/" + announcement.getPreviewImageId()
+                                    : null
+                    );
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     public void createAnnouncement(String title,
