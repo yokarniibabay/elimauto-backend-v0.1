@@ -3,7 +3,6 @@ package com.example.elimauto.controllers;
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
-import com.example.elimauto.models.User;
 import com.example.elimauto.services.AnnouncementService;
 
 import com.example.elimauto.services.ImageService;
@@ -37,8 +36,7 @@ public class AnnouncementController {
 
     @GetMapping
     public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements() {
-        List<Announcement> announcements = announcementService.getAllAnnouncements();
-        List<AnnouncementDTO> announcementDTOs = announcements.stream()
+        List<AnnouncementDTO> announcementDTOs = announcementService.getAllAnnouncements().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(announcementDTOs);
