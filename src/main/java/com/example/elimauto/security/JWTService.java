@@ -24,10 +24,10 @@ public class JWTService {
     private long jwtExpiration;
 
     public String generateToken(User user) {
-        String role = user.getRoles().iterator().next().getName(); // Извлекаем первую роль
+        String role = user.getRoles().iterator().next().getName();
         return Jwts.builder()
                 .setSubject(user.getPhoneNumber())
-                .claim("role", role) // Включаем роль в токен
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)

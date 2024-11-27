@@ -23,6 +23,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
         try {
+            System.out.println("Received request body: " + requestBody);
             String phoneNumber = requestBody.get("phoneNumber");
             String password = requestBody.get("password");
             String token = userService.loginUser(phoneNumber, password);
@@ -35,6 +36,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody User user) {
         try {
+            System.out.println("Received request body: " + user);
             String message = userService.registerUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(message);
         } catch (IllegalArgumentException e) {

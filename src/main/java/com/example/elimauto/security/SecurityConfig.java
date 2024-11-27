@@ -38,9 +38,9 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/announcements/").permitAll()
-                        .requestMatchers("/api/announcement/create").authenticated()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/announcements/").permitAll()
+                        .requestMatchers("/announcement/create").authenticated()
                         .requestMatchers("/api/moderator/**").hasRole("MODERATOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

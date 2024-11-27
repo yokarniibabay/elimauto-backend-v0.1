@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/announcement")
 @RequiredArgsConstructor
 public class AnnouncementController {
     private final AnnouncementService announcementService;
@@ -35,7 +35,7 @@ public class AnnouncementController {
         return new ResponseEntity<>(announcements, HttpStatus.OK);
     }
 
-    @GetMapping("/announcement/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Announcement> getAnnouncementInfo(@PathVariable Long id) {
         Announcement announcement = announcementService.getAnnouncementById(id);
         if (announcement == null) {
@@ -44,7 +44,7 @@ public class AnnouncementController {
         return new ResponseEntity<>(announcement, HttpStatus.OK);
     }
 
-    @PostMapping("/announcement/create")
+    @PostMapping("/create")
     public ResponseEntity<String> createAnnouncement(@RequestParam("title") String title,
                                                      @RequestParam("description") String description,
                                                      @RequestParam("price") double price,
@@ -68,7 +68,7 @@ public class AnnouncementController {
     }
 
 
-    @DeleteMapping("/announcement/delete/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteAnnouncement(@PathVariable Long id) throws IOException {
         try {
             announcementService.deleteAnnouncement(id);
