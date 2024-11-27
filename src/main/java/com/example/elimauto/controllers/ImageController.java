@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/images")
+@RequestMapping("/api/image")
 @RequiredArgsConstructor
 public class ImageController {
     private final ImageRepository imageRepository;
@@ -31,7 +31,7 @@ public class ImageController {
     @Autowired
     private ImageService imageService;
 
-    @GetMapping("/announcement/{id}/images")
+    @GetMapping("/{id}/images")
     public ResponseEntity<List<String>> getImages(@PathVariable Long id) {
         List<Image> images = imageService.getImagesByAnnouncementId(id);
 
