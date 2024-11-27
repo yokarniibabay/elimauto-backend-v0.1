@@ -1,6 +1,7 @@
 package com.example.elimauto.security;
 
 import com.example.elimauto.models.User;
+import com.example.elimauto.models.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -24,10 +26,14 @@ public class JWTService {
     private long jwtExpiration;
 
     public String generateToken(User user) {
-        String role = user.getRoles().iterator().next().getName();
+        String roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.joining(","));
+        String name = user.getName();
         return Jwts.builder()
                 .setSubject(user.getPhoneNumber())
-                .claim("role", role)
+                .claim("role", roles)
+                .claim("name", name)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
