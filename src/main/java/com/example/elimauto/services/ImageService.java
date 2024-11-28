@@ -3,6 +3,7 @@ package com.example.elimauto.services;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.repositories.ImageRepository;
+import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
+@Slf4j
 @Service
 public class ImageService {
     private static final List<String> SUPPORTED_IMAGE_TYPES =
@@ -54,6 +55,39 @@ public class ImageService {
         image.setAnnouncement(announcement);
 
         return imageRepository.save(image);
+    }
+
+    public void saveImages(List<MultipartFile> files,
+                           Announcement announcement,
+                           List<Image> savedImages)
+            throws IOException {
+        boolean isFirstImage = true;
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                Image savedImage = saveImage(file, announcement, isFirstImage);
+                savedImages.add(savedImage);
+                isFirstImage = false;
+            }
+        }
+    }
+
+    public void setPreviewImage(Announcement announcement, List<Image> savedImages) {
+        Long previewImageId = savedImages.stream()
+                .filter(Image::isPreviewImage)
+                .map(Image::getId)
+                .findFirst()
+                .orElse(null);
+        announcement.setPreviewImageId(previewImageId);
+    }
+
+    public void rollbackSavedImages(List<Image> savedImages) {
+        for (Image image : savedImages) {
+            try {
+                deleteImage(image);
+            } catch (IOException e) {
+                log.error("Ошибка при удалении изображения: {}", image.getId(), e);
+            }
+        }
     }
 
     public byte[] processImage(MultipartFile file) throws IOException {
