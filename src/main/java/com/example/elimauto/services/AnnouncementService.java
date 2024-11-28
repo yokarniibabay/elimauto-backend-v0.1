@@ -1,6 +1,7 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
+import com.example.elimauto.DTO.ImageDTO;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
@@ -9,8 +10,8 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final ImageService imageService;
+    private final UserService userService;
 
     public List<Announcement> listAnnouncements(String title) {
         if (title != null && !title.isEmpty()) {
@@ -44,7 +46,7 @@ public class AnnouncementService {
                     dto.setAuthorName(
                             announcement.getAuthor() != null
                                     ? announcement.getAuthor().getName()
-                                    : "Anonymous"
+                                    : "Неизвестный Автор"
                     );
                     dto.setPreviewImageUrl(
                             announcement.getPreviewImageId() != null
@@ -56,14 +58,13 @@ public class AnnouncementService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public void createAnnouncement(String title,
                                    String description,
                                    double price,
                                    String city,
                                    List<MultipartFile> files) throws IOException {
-        if (files.size() > 20) {
-            throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
-        }
+        validateInputs(title, description, price, city, files);
 
         List<Image> savedImages = new ArrayList<>();
         boolean isFirstImage = true;
@@ -75,45 +76,29 @@ public class AnnouncementService {
         announcement.setPrice(price);
         announcement.setCity(city);
 
+
+
         try {
-            // Получаем текущего пользователя из контекста безопасности.  Добавлена проверка на null!
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (!(principal instanceof User)) {
-                throw new IllegalStateException("Не удалось получить текущего пользователя.  Проверьте аутентификацию.");
-            }
-            User currentUser = (User) principal;
-
-
-            // Устанавливаем текущего пользователя как автора.  Проверка не нужна, так как мы уже проверили выше
+            // Получаем текущего пользователя
+            User currentUser = userService.getCurrentUser();
             announcement.setAuthor(currentUser);
-
+            log.info("Текущий пользователь: {}", announcement.getAuthor().getName());
             // Сохраняем объявление
             Announcement savedAnnouncement = announcementRepository.save(announcement);
 
             // Сохраняем изображения
-            for (MultipartFile file : files) {
-                if (!file.isEmpty()) {
-                    Image savedImage = imageService.saveImage(file, savedAnnouncement, isFirstImage);
-                    savedImages.add(savedImage);
-                    isFirstImage = false;
-                }
-            }
+            imageService.saveImages(files, savedAnnouncement, savedImages);
 
             // Устанавливаем preview-изображение
-            Long previewImageId = savedImages.stream()
-                    .filter(Image::isPreviewImage)
-                    .map(Image::getId)
-                    .findFirst()
-                    .orElse(null);
-            savedAnnouncement.setPreviewImageId(previewImageId);
+            imageService.setPreviewImage(savedAnnouncement, savedImages);
 
             // Сохраняем объявление с обновленным previewImageId
             announcementRepository.save(savedAnnouncement);
-        } catch (IOException | IllegalStateException e) { // Изменено на IllegalStateException
-            // Удаляем загруженные изображения при ошибке
-            for (Image image : savedImages) {
-                imageService.deleteImage(image);
-            }
+            log.info("Создано объявление с ID: {}", savedAnnouncement.getId());
+
+        } catch (IOException | IllegalStateException e) {
+            log.error("Ошибка при создании объявления: {}", e.getMessage());
+            imageService.rollbackSavedImages(savedImages);
             throw e;
         }
     }
@@ -131,5 +116,48 @@ public class AnnouncementService {
     public Announcement getAnnouncementById(Long id) {
         return announcementRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException("Announcement not found"));
+    }
+
+    private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Название объявления не может быть пустым.");
+        }
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("Описание не может быть пустым.");
+        }
+        if (price <= 0) {
+            throw new IllegalArgumentException("Цена должна быть положительной.");
+        }
+        if (city == null || city.isBlank()) {
+            throw new IllegalArgumentException("Город не может быть пустым.");
+        }
+        if (files.size() > 20) {
+            throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
+        }
+    }
+
+    public AnnouncementDTO convertToDto(Announcement announcement) {
+        AnnouncementDTO dto = new AnnouncementDTO();
+        dto.setId(announcement.getId());
+        dto.setTitle(announcement.getTitle());
+        dto.setDescription(announcement.getDescription());
+        dto.setPrice(announcement.getPrice());
+        dto.setCity(announcement.getCity());
+
+        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Неизвестно");
+
+        log.info("Конвертация объявления с ID {}: Превью-изображение ID = {}",
+                announcement.getId(), announcement.getPreviewImageId());
+
+        dto.setPreviewImageUrl(announcement.getPreviewImageId() != null ?
+                "/api/image/preview/" + announcement.getPreviewImageId() : null);
+
+        dto.setImages(announcement.getImages() != null ?
+                announcement.getImages().stream()
+                .map(image -> new ImageDTO(image.getId(), image.getPath(), image.getContentType()))
+                .collect(Collectors.toList())
+                : new ArrayList<>());
+
+        return dto;
     }
 }

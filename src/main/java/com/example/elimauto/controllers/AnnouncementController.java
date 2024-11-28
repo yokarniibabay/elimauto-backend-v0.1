@@ -40,35 +40,17 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcements);
     }
 
-    private AnnouncementDTO convertToDto(Announcement announcement) {
-        AnnouncementDTO dto = new AnnouncementDTO();
-        dto.setId(announcement.getId());
-        dto.setTitle(announcement.getTitle());
-        dto.setDescription(announcement.getDescription());
-        dto.setPrice(announcement.getPrice());
-        dto.setCity(announcement.getCity());
-        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Unknown");
 
-        log.info("Preview Image ID for announcement {}: {}", announcement.getId(), announcement.getPreviewImageId());
-        // Установим превью-изображение
-        if (announcement.getPreviewImageId() != null) {
-            dto.setPreviewImageUrl(
-                    "/api/image/preview/" + announcement.getPreviewImageId()
-            ); // URL для загрузки превью
-        }
-
-        return dto;
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id) {
-        try {
-            Announcement announcement = announcementService.getAnnouncementById(id);
-            AnnouncementDTO announcementDTO = convertToDto(announcement);
-            return ResponseEntity.ok(announcementDTO);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        Announcement announcement = announcementService.getAnnouncementById(id);
+        if (announcement == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+
+        AnnouncementDTO dto = announcementService.convertToDto(announcement);
+        return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
     @PostMapping("/create")
