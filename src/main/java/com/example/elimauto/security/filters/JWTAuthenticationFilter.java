@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
@@ -32,34 +34,58 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain chain)
             throws IOException, ServletException {
-        String path = request.getServletPath();
-        System.out.println("Processing request to: " + path);
-        chain.doFilter(request, response);
-        // Проверяем только защищённые маршруты
-        if (!shouldNotFilter(request)) {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+        // Логируем получение заголовка Authorization
+        String authHeader = request.getHeader("Authorization");
+        log.info("Получен заголовок Authorization: {}", authHeader);
+
+        // Проверяем наличие и формат заголовка
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+
+            try {
+                // Извлекаем номер телефона из токена
                 String phoneNumber = jwtService.extractClaims(token).getSubject();
+                log.info("Извлечён номер телефона из токена: {}", phoneNumber);
+
+                // Проверяем, есть ли аутентификация в SecurityContext
                 if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    var user = userRepository.findByPhoneNumber(phoneNumber);
-                    if (user.isPresent() && jwtService.isTokenValid(token, phoneNumber)) {
-                        UsernamePasswordAuthenticationToken authToken =
-                                new UsernamePasswordAuthenticationToken(user.get(), null, user.get().getAuthorities());
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    var userOptional = userRepository.findByPhoneNumber(phoneNumber);
+                    if (userOptional.isPresent()) {
+                        var user = userOptional.get();
+
+                        // Проверяем валидность токена
+                        if (jwtService.isTokenValid(token, phoneNumber)) {
+                            log.info("Токен действителен. Устанавливаем аутентификацию для пользователя: {}", phoneNumber);
+
+                            // Создаём объект аутентификации
+                            UsernamePasswordAuthenticationToken authToken =
+                                    new UsernamePasswordAuthenticationToken(
+                                            user,
+                                            null,
+                                            user.getAuthorities()
+                                    );
+
+                            // Устанавливаем дополнительные детали (например, IP-адрес запроса)
+                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                            // Устанавливаем аутентификацию в SecurityContext
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        } else {
+                            log.warn("Токен недействителен для пользователя: {}", phoneNumber);
+                        }
+                    } else {
+                        log.warn("Пользователь с номером телефона {} не найден в базе данных", phoneNumber);
                     }
                 }
+            } catch (Exception e) {
+                log.error("Ошибка при обработке токена: {}", e.getMessage(), e);
             }
+        } else {
+            log.info("Заголовок Authorization отсутствует или не соответствует формату Bearer");
         }
 
+        // Продолжаем цепочку фильтров
         chain.doFilter(request, response);
-    }
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/auth/") || path.startsWith("/announcement/");
     }
 }
 
