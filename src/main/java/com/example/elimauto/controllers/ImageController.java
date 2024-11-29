@@ -31,7 +31,7 @@ public class ImageController {
     @Autowired
     private ImageService imageService;
 
-    @GetMapping("/{id}/images")
+    @GetMapping("/{announcementId}/images")
     public ResponseEntity<List<String>> getImages(@PathVariable Long id) {
         List<Image> images = imageService.getImagesByAnnouncementId(id);
 

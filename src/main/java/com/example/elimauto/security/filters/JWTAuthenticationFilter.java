@@ -34,57 +34,42 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain chain)
             throws IOException, ServletException {
-        // Логируем получение заголовка Authorization
-        String authHeader = request.getHeader("Authorization");
-        log.info("Получен заголовок Authorization: {}", authHeader);
+        String requestPath = request.getRequestURI();
+        String method = request.getMethod();
 
-        // Проверяем наличие и формат заголовка
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-
-            try {
-                // Извлекаем номер телефона из токена
-                String phoneNumber = jwtService.extractClaims(token).getSubject();
-                log.info("Извлечён номер телефона из токена: {}", phoneNumber);
-
-                // Проверяем, есть ли аутентификация в SecurityContext
-                if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    var userOptional = userRepository.findByPhoneNumber(phoneNumber);
-                    if (userOptional.isPresent()) {
-                        var user = userOptional.get();
-
-                        // Проверяем валидность токена
-                        if (jwtService.isTokenValid(token, phoneNumber)) {
-                            log.info("Токен действителен. Устанавливаем аутентификацию для пользователя: {}", phoneNumber);
-
-                            // Создаём объект аутентификации
-                            UsernamePasswordAuthenticationToken authToken =
-                                    new UsernamePasswordAuthenticationToken(
-                                            user,
-                                            null,
-                                            user.getAuthorities()
-                                    );
-
-                            // Устанавливаем дополнительные детали (например, IP-адрес запроса)
-                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                            // Устанавливаем аутентификацию в SecurityContext
-                            SecurityContextHolder.getContext().setAuthentication(authToken);
-                        } else {
-                            log.warn("Токен недействителен для пользователя: {}", phoneNumber);
-                        }
-                    } else {
-                        log.warn("Пользователь с номером телефона {} не найден в базе данных", phoneNumber);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Ошибка при обработке токена: {}", e.getMessage(), e);
-            }
-        } else {
-            log.info("Заголовок Authorization отсутствует или не соответствует формату Bearer");
+        if ((requestPath.startsWith("/auth") && method.equalsIgnoreCase("POST")) ||
+                requestPath.startsWith("/announcement/all") ||
+                requestPath.matches("/announcement/\\d+") ||
+                requestPath.startsWith("/api/image/")) {
+            chain.doFilter(request, response);
+            return;
         }
 
-        // Продолжаем цепочку фильтров
+        // Получаем заголовок Authorization
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.info("Заголовок Authorization отсутствует или не соответствует формату Bearer");
+            chain.doFilter(request, response); // Продолжаем обработку без аутентификации
+            return;
+        }
+
+        String token = authHeader.substring(7);
+        String phoneNumber = jwtService.extractClaims(token).getSubject();
+
+        if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            var user = userRepository.findByPhoneNumber(phoneNumber);
+            if (user.isPresent() && jwtService.isTokenValid(token, phoneNumber)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        user.get(),
+                        null,
+                        user.get().getAuthorities()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
         chain.doFilter(request, response);
     }
 }
