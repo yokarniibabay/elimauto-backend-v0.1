@@ -10,7 +10,6 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +32,7 @@ public class AnnouncementService {
 
     public List<AnnouncementDTO> getAllAnnouncements() {
         return announcementRepository.findAll().stream()
+                .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED) // Фильтруем по статусу
                 .map(announcement -> {
                     AnnouncementDTO dto = new AnnouncementDTO();
                     dto.setId(announcement.getId());
@@ -50,12 +50,13 @@ public class AnnouncementService {
                                     ? "/images/" + announcement.getPreviewImageId()
                                     : null
                     );
+                    dto.setStatus(announcement.getStatus());
                     return dto;
                 })
                 .collect(Collectors.toList());
     }
 
-    @SneakyThrows
+
     public AnnouncementDTO getAnnouncementById(Long id) {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
@@ -63,7 +64,11 @@ public class AnnouncementService {
         User currentUser = userService.getCurrentUser();
 
         if (!canAccessAnnouncement(currentUser, announcement)) {
-            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+            try {
+                throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+            } catch (AccessDeniedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return convertToDto(announcement);
@@ -73,11 +78,15 @@ public class AnnouncementService {
         return announcementRepository.findByStatus(status);
     }
 
-    @SneakyThrows
+
     public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
         User currentUser = userService.getCurrentUser();
         if (!canAccessUserAnnouncements(currentUser, authorId)) {
-            throw new AccessDeniedException("Недостаточно прав для просмотра объявлений данного пользователя");
+            try {
+                throw new AccessDeniedException("Недостаточно прав для просмотра объявлений данного пользователя");
+            } catch (AccessDeniedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
