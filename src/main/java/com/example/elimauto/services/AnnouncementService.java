@@ -34,27 +34,8 @@ public class AnnouncementService {
 
     public List<AnnouncementDTO> getAllAnnouncements() {
         return announcementRepository.findAll().stream()
-                .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED) // Фильтруем по статусу
-                .map(announcement -> {
-                    AnnouncementDTO dto = new AnnouncementDTO();
-                    dto.setId(announcement.getId());
-                    dto.setTitle(announcement.getTitle());
-                    dto.setDescription(announcement.getDescription());
-                    dto.setPrice(announcement.getPrice());
-                    dto.setCity(announcement.getCity());
-                    dto.setAuthorName(
-                            announcement.getAuthor() != null
-                                    ? announcement.getAuthor().getName()
-                                    : "Неизвестный Автор"
-                    );
-                    dto.setPreviewImageUrl(
-                            announcement.getPreviewImageId() != null
-                                    ? "/images/" + announcement.getPreviewImageId()
-                                    : null
-                    );
-                    dto.setStatus(announcement.getStatus());
-                    return dto;
-                })
+                .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED)
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
@@ -63,20 +44,19 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
+        // Получаем текущего пользователя
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = null;
 
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
-            if (!canAccessAnnouncement(null, announcement, AnnouncementStatus.APPROVED)) {
-                throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
-            }
-        } else {
-            User currentUser = userService.getCurrentUser();
-            if (!canAccessAnnouncement(currentUser, announcement, announcement.getStatus())) {
-                throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
-            }
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            currentUser = userService.getCurrentUser();
         }
+
+        // Проверяем доступ с использованием canAccessAnnouncement
+        if (!canAccessAnnouncement(currentUser, announcement, null)) { // null для модератора/админа
+            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+        }
+
         return convertToDto(announcement);
     }
 
@@ -87,37 +67,14 @@ public class AnnouncementService {
 
     public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
         User currentUser = userService.getCurrentUser();
+
+        // Проверяем права доступа на основании нового метода
         List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
 
-        if (announcements.isEmpty()) {
-            throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
-        }
-        List<AnnouncementDTO> announcementDTOs = announcements.stream()
-                .filter(announcement -> canAccessAnnouncement(currentUser, announcement, announcement.getStatus()))
-                .map(announcement -> {
-                    AnnouncementDTO dto = convertToDto(announcement);
-                    switch (announcement.getStatus()) {
-                        case REJECTED -> {
-                            dto.setStatus(AnnouncementStatus.REJECTED);
-                            dto.setStatusComment(announcement.getStatusComment());
-                        }
-                        case PENDING -> dto.setStatus(AnnouncementStatus.PENDING);
-                        case APPROVED -> dto.setStatus(AnnouncementStatus.APPROVED);
-                    }
-
-                    return dto;
-                })
+        return announcements.stream()
+                .filter(announcement -> canAccessAnnouncement(currentUser, announcement, null)) // null для фильтрации по статусу
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
-
-        if (announcementDTOs.isEmpty()) {
-            try {
-                throw new AccessDeniedException("У вас нет прав на просмотр объявлений данного автора.");
-            } catch (AccessDeniedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        return announcementDTOs;
     }
 
     @Transactional
@@ -212,12 +169,18 @@ public class AnnouncementService {
                                          Announcement announcement,
                                          AnnouncementStatus requiredStatus) {
         if (currentUser == null) {
+            // Для неавторизованных пользователей проверяем только статус
             return announcement.getStatus() == requiredStatus;
         }
 
-        return currentUser.getId().equals(announcement.getAuthor().getId()) || // Пользователь — автор
-                currentUser.hasRole("ROLE_MODERATOR") || // Или модератор
-                currentUser.hasRole("ROLE_ADMIN"); // Или администратор
+        // Администратор или модератор имеет доступ к любому объявлению
+        if (currentUser.hasRole("ROLE_MODERATOR") || currentUser.hasRole("ROLE_ADMIN")) {
+            return true;
+        }
+
+        // Автор имеет доступ к своим объявлениям независимо от статуса
+        return currentUser.getId().equals(announcement.getAuthor().getId()) &&
+                (requiredStatus == null || announcement.getStatus() == requiredStatus);
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
