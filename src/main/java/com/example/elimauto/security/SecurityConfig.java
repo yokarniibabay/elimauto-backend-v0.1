@@ -3,10 +3,12 @@ package com.example.elimauto.security;
 import com.example.elimauto.exception.CustomAccessDeniedHandler;
 import com.example.elimauto.exception.CustomAuthenticationEntryPoint;
 import com.example.elimauto.security.filters.JWTAuthenticationFilter;
+import com.example.elimauto.services.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,15 +28,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
-
+    private final CustomUserDetailsService userDetailsService;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(JWTAuthenticationFilter jwtAuthenticationFilter,
                           CustomAccessDeniedHandler accessDeniedHandler,
-                          CustomAuthenticationEntryPoint authenticationEntryPoint) {
+                          CustomAuthenticationEntryPoint authenticationEntryPoint,
+                          CustomUserDetailsService userDetailsService) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.accessDeniedHandler = accessDeniedHandler;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.userDetailsService = userDetailsService;
     }
 
 
@@ -81,6 +85,14 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService); // Ваш сервис, возвращающий UserDetails
+        authProvider.setPasswordEncoder(passwordEncoder()); // Кодировщик паролей
+        return authProvider;
     }
 
     @Bean

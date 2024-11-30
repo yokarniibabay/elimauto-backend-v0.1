@@ -89,12 +89,13 @@ public class UserService {
         }
 
         Object principal = authentication.getPrincipal();
+
         if (principal instanceof User) {
             return (User) principal;
-        } else if (principal instanceof UserDetails) {
-            String phoneNumber = ((UserDetails) principal).getUsername();
-            return userRepository.findByPhoneNumber(phoneNumber)
-                    .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден: " + phoneNumber));
+        } else if (principal instanceof String) {
+            // Если Principal — строка, ищем пользователя по номеру телефона
+            return userRepository.findByPhoneNumber((String) principal)
+                    .orElseThrow(() -> new IllegalStateException("Пользователь не найден: " + principal));
         } else {
             throw new IllegalStateException("Principal имеет неожиданный тип: " + principal.getClass());
         }
