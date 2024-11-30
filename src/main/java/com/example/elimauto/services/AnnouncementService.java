@@ -44,19 +44,25 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
-        // Получаем текущего пользователя
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
             currentUser = userService.getCurrentUser();
         }
 
-        // Проверяем доступ с использованием canAccessAnnouncement
-        if (!canAccessAnnouncement(currentUser, announcement, null)) { // null для модератора/админа
+        // Если пользователь анонимный, проверяем только объявления со статусом APPROVED
+        if (currentUser == null && announcement.getStatus() != AnnouncementStatus.APPROVED) {
             throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
         }
 
+        // Если пользователь авторизован, проверяем доступ с использованием canAccessAnnouncement
+        if (currentUser != null && !canAccessAnnouncement(currentUser, announcement, null)) {
+            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+        }
+
+        // Если доступ разрешён, возвращаем DTO
         return convertToDto(announcement);
     }
 
@@ -168,19 +174,22 @@ public class AnnouncementService {
     public boolean canAccessAnnouncement(User currentUser,
                                          Announcement announcement,
                                          AnnouncementStatus requiredStatus) {
-        if (currentUser == null) {
-            // Для неавторизованных пользователей проверяем только статус
-            return announcement.getStatus() == requiredStatus;
-        }
-
-        // Администратор или модератор имеет доступ к любому объявлению
+        // Модератор и администратор имеют доступ к любым объявлениям
         if (currentUser.hasRole("ROLE_MODERATOR") || currentUser.hasRole("ROLE_ADMIN")) {
             return true;
         }
 
-        // Автор имеет доступ к своим объявлениям независимо от статуса
-        return currentUser.getId().equals(announcement.getAuthor().getId()) &&
-                (requiredStatus == null || announcement.getStatus() == requiredStatus);
+        // Автор объявления имеет доступ к своим объявлениям
+        if (currentUser.getId().equals(announcement.getAuthor().getId())) {
+            return true;
+        }
+
+        if (currentUser == null) {
+            // Если пользователь не авторизован, доступ только к объявлениям со статусом APPROVED
+            return announcement.getStatus() == AnnouncementStatus.APPROVED;
+        }
+        // По умолчанию проверяем статус
+        return announcement.getStatus() == requiredStatus;
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {

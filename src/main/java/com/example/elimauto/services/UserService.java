@@ -10,8 +10,6 @@ import com.example.elimauto.security.JWTService;
 import com.example.elimauto.models.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -93,7 +91,6 @@ public class UserService {
         if (principal instanceof User) {
             return (User) principal;
         } else if (principal instanceof String) {
-            // Если Principal — строка, ищем пользователя по номеру телефона
             return userRepository.findByPhoneNumber((String) principal)
                     .orElseThrow(() -> new IllegalStateException("Пользователь не найден: " + principal));
         } else {

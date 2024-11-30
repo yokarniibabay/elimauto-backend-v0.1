@@ -37,46 +37,30 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         String method = request.getMethod();
 
-        // Пропуск публичных маршрутов
         if ((requestPath.startsWith("/auth") && method.equalsIgnoreCase("POST")) ||
                 requestPath.startsWith("/announcement/all") ||
-                requestPath.matches("/announcement/\\d+") ||
                 requestPath.startsWith("/api/image/")) {
-            log.debug("Пропущен путь без проверки токена: {}", requestPath);
             chain.doFilter(request, response);
             return;
         }
 
+        // Получаем заголовок Authorization
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.info("Заголовок Authorization отсутствует или не соответствует формату Bearer");
-            SecurityContextHolder.clearContext();
-            chain.doFilter(request, response);
-            return;
-        }
 
         String token = authHeader.substring(7);
-        try {
-            String phoneNumber = jwtService.extractClaims(token).getSubject();
-            if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var user = userRepository.findByPhoneNumber(phoneNumber);
-                if (user.isPresent() && user.get().isEnabled() && jwtService.isTokenValid(token, phoneNumber)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            user.get(),
-                            null,
-                            user.get().getAuthorities()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.info("Успешно установлена аутентификация для пользователя: {}", phoneNumber);
-                } else {
-                    log.warn("Недействительный токен или пользователь заблокирован: {}", phoneNumber);
-                    SecurityContextHolder.clearContext();
-                }
+        String phoneNumber = jwtService.extractClaims(token).getSubject();
+
+        if (phoneNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            var user = userRepository.findByPhoneNumber(phoneNumber);
+            if (user.isPresent() && jwtService.isTokenValid(token, phoneNumber)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        user.get(),
+                        null,
+                        user.get().getAuthorities()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (Exception e) {
-            log.error("Ошибка при обработке токена: {}", e.getMessage());
-            SecurityContextHolder.clearContext();
         }
 
         chain.doFilter(request, response);
