@@ -5,6 +5,7 @@ import com.example.elimauto.exception.CustomAuthenticationEntryPoint;
 import com.example.elimauto.security.filters.JWTAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -43,13 +44,14 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Отключаем CSRF (для REST API)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Регистрация и вход доступны всем
-                        .requestMatchers("/announcement/**").permitAll() // Главная страница объявлений доступна всем
+                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+                        .requestMatchers("/announcement/all").permitAll()
+                        .requestMatchers("/announcement/{id}").permitAll()
                         .requestMatchers("/api/image/**").permitAll()
-                        .requestMatchers("/announcement/create").authenticated() // Создание объявления только для авторизованных
-                        .requestMatchers("/moderation/**").hasRole("MODERATOR") // Роуты для модераторов
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // Роуты для администраторов
-                        .anyRequest().authenticated() // Все остальные маршруты требуют авторизации
+                        // Требуют аутентификации
+                        .requestMatchers("/announcement/create").authenticated()
+                        .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Используем JWT, сессии не храним
                 .exceptionHandling(ex -> ex

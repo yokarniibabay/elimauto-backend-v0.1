@@ -40,7 +40,11 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcements);
     }
 
-
+    @GetMapping("/author/{authorId}/announcements")
+    public ResponseEntity<List<AnnouncementDTO>> getAnnouncementsByAuthor(@PathVariable Long authorId) {
+        List<AnnouncementDTO> announcements = announcementService.getAnnouncementsByAuthorId(authorId);
+        return ResponseEntity.ok(announcements);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id) {

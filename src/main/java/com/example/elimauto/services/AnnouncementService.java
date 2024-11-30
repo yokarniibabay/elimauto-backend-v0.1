@@ -69,30 +69,28 @@ public class AnnouncementService {
         List<Image> savedImages = new ArrayList<>();
         boolean isFirstImage = true;
 
-        // Создаем объявление
         Announcement announcement = new Announcement();
         announcement.setTitle(title);
         announcement.setDescription(description);
         announcement.setPrice(price);
         announcement.setCity(city);
 
-
-
         try {
-            // Получаем текущего пользователя
             User currentUser = userService.getCurrentUser();
+            if (currentUser == null) {
+                throw new IllegalStateException("Пользователь должен быть аутентифицирован");
+            }
+
             announcement.setAuthor(currentUser);
-            log.info("Текущий пользователь: {}", announcement.getAuthor().getName());
-            // Сохраняем объявление
+            announcement.setAuthorName(currentUser.getName());
+            log.info("Текущий пользователь: {}", announcement.getAuthor());
+
             Announcement savedAnnouncement = announcementRepository.save(announcement);
 
-            // Сохраняем изображения
             imageService.saveImages(files, savedAnnouncement, savedImages);
 
-            // Устанавливаем preview-изображение
             imageService.setPreviewImage(savedAnnouncement, savedImages);
 
-            // Сохраняем объявление с обновленным previewImageId
             announcementRepository.save(savedAnnouncement);
             log.info("Создано объявление с ID: {}", savedAnnouncement.getId());
 
@@ -116,6 +114,18 @@ public class AnnouncementService {
     public Announcement getAnnouncementById(Long id) {
         return announcementRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException("Announcement not found"));
+    }
+
+    public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
+        List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
+
+        if (announcements.isEmpty()) {
+            throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
+        }
+
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
