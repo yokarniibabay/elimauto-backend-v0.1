@@ -10,6 +10,8 @@ import com.example.elimauto.security.JWTService;
 import com.example.elimauto.models.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -85,6 +87,16 @@ public class UserService {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalStateException("Пользователь не аутентифицирован.");
         }
-        return (User) authentication.getPrincipal();
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof User) {
+            return (User) principal;
+        } else if (principal instanceof UserDetails) {
+            String phoneNumber = ((UserDetails) principal).getUsername();
+            return userRepository.findByPhoneNumber(phoneNumber)
+                    .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден: " + phoneNumber));
+        } else {
+            throw new IllegalStateException("Principal имеет неожиданный тип: " + principal.getClass());
+        }
     }
 }
