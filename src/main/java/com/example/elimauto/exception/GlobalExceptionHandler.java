@@ -1,12 +1,14 @@
 package com.example.elimauto.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -33,6 +35,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGenericException(Exception ex) {
+        log.info("Перехвачено исключение: " + ex);
         return new ResponseEntity<>("Внутренняя ошибка сервера. Обратитесь в службу поддержки.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
