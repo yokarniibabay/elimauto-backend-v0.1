@@ -50,6 +50,7 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .requestMatchers("/api/image/**").permitAll()
                         // Требуют аутентификации
                         .requestMatchers("/announcement/create").authenticated()
+                        .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Используем JWT, сессии не храним

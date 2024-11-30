@@ -116,6 +116,18 @@ public class AnnouncementService {
                 () -> new EntityNotFoundException("Announcement not found"));
     }
 
+    public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
+        List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
+
+        if (announcements.isEmpty()) {
+            throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
+        }
+
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Название объявления не может быть пустым.");
