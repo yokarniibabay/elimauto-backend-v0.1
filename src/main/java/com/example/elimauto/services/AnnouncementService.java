@@ -2,6 +2,7 @@ package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.DTO.ImageDTO;
+import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
@@ -9,12 +10,15 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,13 +30,6 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final ImageService imageService;
     private final UserService userService;
-
-    public List<Announcement> listAnnouncements(String title) {
-        if (title != null && !title.isEmpty()) {
-            return announcementRepository.findByTitle(title);
-        }
-        return announcementRepository.findAll();
-    }
 
     public List<AnnouncementDTO> getAllAnnouncements() {
         return announcementRepository.findAll().stream()
@@ -53,6 +50,55 @@ public class AnnouncementService {
                                     ? "/images/" + announcement.getPreviewImageId()
                                     : null
                     );
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @SneakyThrows
+    public AnnouncementDTO getAnnouncementById(Long id) {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
+
+        User currentUser = userService.getCurrentUser();
+
+        if (!canAccessAnnouncement(currentUser, announcement)) {
+            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+        }
+
+        return convertToDto(announcement);
+    }
+
+    public List<Announcement> getAnnouncementsByStatus(AnnouncementStatus status) {
+        return announcementRepository.findByStatus(status);
+    }
+
+    @SneakyThrows
+    public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
+        User currentUser = userService.getCurrentUser();
+        if (!canAccessUserAnnouncements(currentUser, authorId)) {
+            throw new AccessDeniedException("Недостаточно прав для просмотра объявлений данного пользователя");
+        }
+
+        List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
+
+        if (announcements.isEmpty()) {
+            throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
+        }
+
+        return announcements.stream()
+                .map(announcement -> {
+                    AnnouncementDTO dto = convertToDto(announcement);
+                    switch (announcement.getStatus()) {
+                        case REJECTED -> {
+                            dto.setStatus(AnnouncementStatus.REJECTED);
+                            dto.setStatusComment(announcement.getStatusComment());
+                        }
+                        case PENDING -> dto.setStatus(AnnouncementStatus.PENDING);
+                        case APPROVED -> dto.setStatus(AnnouncementStatus.APPROVED);
+//                        default -> dto.setStatus(AnnouncementStatus.UNKNOWN); // На случай новых статусов
+                    }
+
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -85,6 +131,8 @@ public class AnnouncementService {
             announcement.setAuthorName(currentUser.getName());
             log.info("Текущий пользователь: {}", announcement.getAuthor());
 
+            announcement.setStatus(AnnouncementStatus.PENDING);
+
             Announcement savedAnnouncement = announcementRepository.save(announcement);
 
             imageService.saveImages(files, savedAnnouncement, savedImages);
@@ -101,6 +149,29 @@ public class AnnouncementService {
         }
     }
 
+    @Transactional
+    public void updateAnnouncementStatus(Long id, AnnouncementStatus status) {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с id: " + id + " не найдено"));
+        announcement.setStatus(status);
+        announcementRepository.save(announcement);
+    }
+
+    @Transactional
+    public void incrementViews(Long announcementId) {
+        announcementRepository.incrementViews(announcementId);
+    }
+
+    @Transactional
+    public void rejectAnnouncement(Long id, String comment) {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
+        announcement.setStatus(AnnouncementStatus.REJECTED);
+        announcement.setStatusComment(comment);
+        announcement.setRejectedAt(LocalDateTime.now());
+        announcementRepository.save(announcement);
+    }
+
     public void deleteAnnouncement(Long id) throws IOException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Announcement not found"));
@@ -111,21 +182,15 @@ public class AnnouncementService {
         log.info("Deleted announcement with ID: {}", id);
     }
 
-    public Announcement getAnnouncementById(Long id) {
-        return announcementRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Announcement not found"));
+    public boolean canAccessUserAnnouncements(User currentUser, Long userId) {
+        return currentUser.getId().equals(userId) ||
+                currentUser.hasRole("ROLE_MODERATOR") ||
+                currentUser.hasRole("ROLE_ADMIN");
     }
-
-    public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
-        List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
-
-        if (announcements.isEmpty()) {
-            throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
-        }
-
-        return announcements.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public boolean canAccessAnnouncement(User user, Announcement announcement) {
+        return user.getId().equals(announcement.getAuthor().getId()) || // Пользователь — автор
+                user.hasRole("ROLE_MODERATOR") || // Или модератор
+                user.hasRole("ROLE_ADMIN"); // Или администратор
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
@@ -167,6 +232,10 @@ public class AnnouncementService {
                 .map(image -> new ImageDTO(image.getId(), image.getPath(), image.getContentType()))
                 .collect(Collectors.toList())
                 : new ArrayList<>());
+
+        dto.setViews(announcement.getViews());
+        dto.setStatus(announcement.getStatus());
+        dto.setStatusComment(announcement.getStatusComment());
 
         return dto;
     }

@@ -1,5 +1,6 @@
 package com.example.elimauto.DTO;
 
+import com.example.elimauto.consts.AnnouncementStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,9 @@ public class AnnouncementDTO {
     private double price;
     private String city;
     private String authorName;
-    private String previewImageUrl; // URL превью изображения
+    private String previewImageUrl;
     private List<ImageDTO> images;
+    private Long views;
+    private AnnouncementStatus status;
+    private String statusComment;
 }

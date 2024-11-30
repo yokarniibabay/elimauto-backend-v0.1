@@ -51,6 +51,10 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         // Требуют аутентификации
                         .requestMatchers("/announcement/create").authenticated()
                         .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
+                        // Для модератора
+                        .requestMatchers(HttpMethod.POST, "/announcement/approve/**").hasRole("MODERATOR")
+                        .requestMatchers(HttpMethod.POST, "/announcement/reject/**").hasRole("MODERATOR")
+                        .requestMatchers(HttpMethod.GET, "/announcement/pending").hasRole("MODERATOR")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Используем JWT, сессии не храним
