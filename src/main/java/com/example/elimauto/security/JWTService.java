@@ -30,10 +30,12 @@ public class JWTService {
                 .map(Role::getName)
                 .collect(Collectors.joining(","));
         String name = user.getName();
+        Long userId = user.getId();
         return Jwts.builder()
                 .setSubject(user.getPhoneNumber())
                 .claim("role", roles)
                 .claim("name", name)
+                .claim("id", userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
