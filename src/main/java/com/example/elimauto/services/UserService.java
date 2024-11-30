@@ -1,5 +1,8 @@
 package com.example.elimauto.services;
 
+import com.example.elimauto.exception.InvalidPasswordException;
+import com.example.elimauto.exception.UserNotFoundException;
+import com.example.elimauto.exception.ValidationException;
 import com.example.elimauto.models.Role;
 import com.example.elimauto.repositories.RoleRepository;
 import com.example.elimauto.repositories.UserRepository;
@@ -32,7 +35,7 @@ public class UserService {
 
     public String registerUser(User user) {
         if (userRepository.findByPhoneNumber(user.getPhoneNumber()).isPresent()) {
-            throw new IllegalArgumentException("Пользователь с таким номером телефона уже существует");
+            throw new ValidationException("Пользователь с таким номером телефона уже существует");
         }
 
         validateUserFields(user);
@@ -65,13 +68,13 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByPhoneNumber(phoneNumber);
 
         if (userOptional.isEmpty() || !userOptional.get().getEnabled()) {
-            throw new IllegalArgumentException("Пользователь не найден или не активирован");
+            throw new UserNotFoundException("Пользователь не найден или не активирован");
         }
 
         User user = userOptional.get();
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("Неверный пароль");
+            throw new InvalidPasswordException("Неверный пароль");
         }
 
         return jwtService.generateToken(user);
