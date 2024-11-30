@@ -11,4 +11,5 @@ import java.util.List;
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
     List<Announcement> findByTitle(String title);
     List<Announcement> findByAuthor(User user);
+    List<Announcement> findByAuthorId(Long id);
 }
