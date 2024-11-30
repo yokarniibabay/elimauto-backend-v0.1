@@ -11,6 +11,8 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,20 +59,24 @@ public class AnnouncementService {
     }
 
 
-    public AnnouncementDTO getAnnouncementById(Long id) {
+    public AnnouncementDTO getAnnouncementById(Long id) throws AccessDeniedException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
-        User currentUser = userService.getCurrentUser();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (!canAccessAnnouncement(currentUser, announcement)) {
-            try {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            if (!canAccessAnnouncement(null, announcement, AnnouncementStatus.APPROVED)) {
                 throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
-            } catch (AccessDeniedException e) {
-                throw new RuntimeException(e);
+            }
+        } else {
+            User currentUser = userService.getCurrentUser();
+            if (!canAccessAnnouncement(currentUser, announcement, announcement.getStatus())) {
+                throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
             }
         }
-
         return convertToDto(announcement);
     }
 
@@ -81,21 +87,13 @@ public class AnnouncementService {
 
     public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
         User currentUser = userService.getCurrentUser();
-        if (!canAccessUserAnnouncements(currentUser, authorId)) {
-            try {
-                throw new AccessDeniedException("Недостаточно прав для просмотра объявлений данного пользователя");
-            } catch (AccessDeniedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
 
         if (announcements.isEmpty()) {
             throw new EntityNotFoundException("Объявления автора с ID " + authorId + " не найдены.");
         }
-
-        return announcements.stream()
+        List<AnnouncementDTO> announcementDTOs = announcements.stream()
+                .filter(announcement -> canAccessAnnouncement(currentUser, announcement, announcement.getStatus()))
                 .map(announcement -> {
                     AnnouncementDTO dto = convertToDto(announcement);
                     switch (announcement.getStatus()) {
@@ -105,12 +103,21 @@ public class AnnouncementService {
                         }
                         case PENDING -> dto.setStatus(AnnouncementStatus.PENDING);
                         case APPROVED -> dto.setStatus(AnnouncementStatus.APPROVED);
-//                        default -> dto.setStatus(AnnouncementStatus.UNKNOWN); // На случай новых статусов
                     }
 
                     return dto;
                 })
                 .collect(Collectors.toList());
+
+        if (announcementDTOs.isEmpty()) {
+            try {
+                throw new AccessDeniedException("У вас нет прав на просмотр объявлений данного автора.");
+            } catch (AccessDeniedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return announcementDTOs;
     }
 
     @Transactional
@@ -160,8 +167,18 @@ public class AnnouncementService {
 
     @Transactional
     public void updateAnnouncementStatus(Long id, AnnouncementStatus status) {
+        User currentUser = userService.getCurrentUser();
+
+        if (!currentUser.hasRole("ROLE_MODERATOR") && !currentUser.hasRole("ROLE_ADMIN")) {
+            try {
+                throw new AccessDeniedException("Недостаточно прав для модерации объявлений.");
+            } catch (AccessDeniedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Объявление с id: " + id + " не найдено"));
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
         announcement.setStatus(status);
         announcementRepository.save(announcement);
     }
@@ -191,15 +208,16 @@ public class AnnouncementService {
         log.info("Deleted announcement with ID: {}", id);
     }
 
-    public boolean canAccessUserAnnouncements(User currentUser, Long userId) {
-        return currentUser.getId().equals(userId) ||
-                currentUser.hasRole("ROLE_MODERATOR") ||
-                currentUser.hasRole("ROLE_ADMIN");
-    }
-    public boolean canAccessAnnouncement(User user, Announcement announcement) {
-        return user.getId().equals(announcement.getAuthor().getId()) || // Пользователь — автор
-                user.hasRole("ROLE_MODERATOR") || // Или модератор
-                user.hasRole("ROLE_ADMIN"); // Или администратор
+    public boolean canAccessAnnouncement(User currentUser,
+                                         Announcement announcement,
+                                         AnnouncementStatus requiredStatus) {
+        if (currentUser == null) {
+            return announcement.getStatus() == requiredStatus;
+        }
+
+        return currentUser.getId().equals(announcement.getAuthor().getId()) || // Пользователь — автор
+                currentUser.hasRole("ROLE_MODERATOR") || // Или модератор
+                currentUser.hasRole("ROLE_ADMIN"); // Или администратор
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {

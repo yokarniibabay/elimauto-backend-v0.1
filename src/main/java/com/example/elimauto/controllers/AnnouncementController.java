@@ -3,11 +3,9 @@ package com.example.elimauto.controllers;
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
-import com.example.elimauto.models.User;
 import com.example.elimauto.services.AnnouncementService;
 
-import com.example.elimauto.services.ImageService;
-import com.example.elimauto.services.UserService;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -46,7 +44,8 @@ public class AnnouncementController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id) {
+    public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id)
+            throws AccessDeniedException {
         try {
             AnnouncementDTO dto = announcementService.getAnnouncementById(id);
             return ResponseEntity.ok(dto);
