@@ -35,17 +35,22 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain chain)
             throws IOException, ServletException {
         String requestPath = request.getRequestURI();
-        String method = request.getMethod();
 
-        if ((requestPath.startsWith("/auth") && method.equalsIgnoreCase("POST")) ||
-                requestPath.startsWith("/announcement/all") ||
-                requestPath.startsWith("/api/image/")) {
+        // Разрешаем публичные маршруты без токена
+        if (requestPath.startsWith("/announcement/public/") ||
+                requestPath.startsWith("/announcement/allApproved") ||
+                requestPath.startsWith("/api/image/") ||
+                requestPath.startsWith("/auth") && request.getMethod().equalsIgnoreCase("POST")) {
             chain.doFilter(request, response);
             return;
         }
 
-        // Получаем заголовок Authorization
+        // Получаем токен из заголовка
         String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            chain.doFilter(request, response); // Продолжаем обработку без аутентификации
+            return;
+        }
 
         String token = authHeader.substring(7);
         String phoneNumber = jwtService.extractClaims(token).getSubject();
@@ -63,7 +68,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        chain.doFilter(request, response);
+        chain.doFilter(request, response); // Продолжаем выполнение цепочки фильтров
     }
 }
 

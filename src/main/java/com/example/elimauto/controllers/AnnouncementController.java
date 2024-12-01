@@ -30,6 +30,13 @@ import java.util.stream.Collectors;
 public class AnnouncementController {
     private final AnnouncementService announcementService;
 
+    @GetMapping("/allApproved")
+    public ResponseEntity<List<AnnouncementDTO>> getAllPublicAnnouncements() {
+        log.info("Fetching all announcements from the database.");
+        List<AnnouncementDTO> announcements = announcementService.getAllApprovedAnnouncements();
+        return ResponseEntity.ok(announcements);
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements() {
         log.info("Fetching all announcements from the database.");
@@ -44,7 +51,7 @@ public class AnnouncementController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AnnouncementDTO> getAnnouncementInfo(@PathVariable Long id)
+    public ResponseEntity<AnnouncementDTO> getAnnouncement(@PathVariable Long id)
             throws AccessDeniedException {
         try {
             AnnouncementDTO dto = announcementService.getAnnouncementById(id);
@@ -52,6 +59,18 @@ public class AnnouncementController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+    }
+
+    @GetMapping("/public/{id}")
+    public ResponseEntity<AnnouncementDTO> getPublicAnnouncement(@PathVariable Long id) {
+        AnnouncementDTO dto = announcementService.getPublicAnnouncementById(id);
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/private/{id}")
+    public ResponseEntity<AnnouncementDTO> getPrivateAnnouncement(@PathVariable Long id) throws AccessDeniedException {
+        AnnouncementDTO dto = announcementService.getAnnouncementById(id); // Используется полная проверка
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/create")

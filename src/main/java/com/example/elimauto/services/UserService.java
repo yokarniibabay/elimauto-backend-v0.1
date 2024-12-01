@@ -97,4 +97,12 @@ public class UserService {
             throw new IllegalStateException("Principal имеет неожиданный тип: " + principal.getClass());
         }
     }
+
+    public User getCurrentUserIfAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            return getCurrentUser();
+        }
+        return null;
+    }
 }

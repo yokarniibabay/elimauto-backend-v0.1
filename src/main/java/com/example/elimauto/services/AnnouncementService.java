@@ -11,7 +11,6 @@ import com.example.elimauto.repositories.AnnouncementRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,57 +30,74 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final ImageService imageService;
     private final UserService userService;
+    private final AccessService accessService;
 
     public List<AnnouncementDTO> getAllAnnouncements() {
+        return announcementRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<AnnouncementDTO> getAllApprovedAnnouncements() {
         return announcementRepository.findAll().stream()
                 .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-
-    public AnnouncementDTO getAnnouncementById(Long id) throws AccessDeniedException {
-        Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
-
-        User currentUser = null;
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-            currentUser = userService.getCurrentUser();
-        }
-
-        // Если пользователь анонимный, проверяем только объявления со статусом APPROVED
-        if (currentUser == null && announcement.getStatus() != AnnouncementStatus.APPROVED) {
-            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
-        }
-
-        // Если пользователь авторизован, проверяем доступ с использованием canAccessAnnouncement
-        if (currentUser != null && !canAccessAnnouncement(currentUser, announcement, null)) {
-            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
-        }
-
-        // Если доступ разрешён, возвращаем DTO
-        return convertToDto(announcement);
-    }
-
     public List<Announcement> getAnnouncementsByStatus(AnnouncementStatus status) {
         return announcementRepository.findByStatus(status);
     }
 
-
     public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
         User currentUser = userService.getCurrentUser();
 
-        // Проверяем права доступа на основании нового метода
+        // Получаем все объявления автора
         List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
 
+        // Фильтруем объявления по доступу с использованием метода canAccessAnnouncement
         return announcements.stream()
-                .filter(announcement -> canAccessAnnouncement(currentUser, announcement, null)) // null для фильтрации по статусу
+                .filter(announcement -> accessService.canAccessAnnouncement(announcement.getId(), SecurityContextHolder.getContext().getAuthentication()))
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
+    public AnnouncementDTO getAnnouncementById(Long id) throws AccessDeniedException {
+        // Получаем объявление по ID
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
+
+        // Получаем текущего пользователя, если он авторизован
+        User currentUser = userService.getCurrentUserIfAuthenticated();
+
+        // Проверяем доступ с использованием метода canAccessAnnouncement
+        if (!accessService.canAccessAnnouncement(id, SecurityContextHolder.getContext().getAuthentication())) {
+            throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
+        }
+
+        // Конвертируем объявление в DTO и возвращаем
+        return convertToDto(announcement);
+    }
+
+    public AnnouncementDTO getPublicAnnouncementById(Long id) {
+        // Находим объявление по ID
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
+
+        // Проверяем, что статус объявления APPROVED
+        if (announcement.getStatus() != AnnouncementStatus.APPROVED) {
+            try {
+                throw new AccessDeniedException("Объявление с ID " + id + " не опубликовано.");
+            } catch (AccessDeniedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Конвертируем в DTO и возвращаем
+        return convertToDto(announcement);
+    }
+
+
 
     @Transactional
     public void createAnnouncement(String title,
@@ -169,27 +185,6 @@ public class AnnouncementService {
 
         announcementRepository.delete(announcement);
         log.info("Deleted announcement with ID: {}", id);
-    }
-
-    public boolean canAccessAnnouncement(User currentUser,
-                                         Announcement announcement,
-                                         AnnouncementStatus requiredStatus) {
-        // Модератор и администратор имеют доступ к любым объявлениям
-        if (currentUser.hasRole("ROLE_MODERATOR") || currentUser.hasRole("ROLE_ADMIN")) {
-            return true;
-        }
-
-        // Автор объявления имеет доступ к своим объявлениям
-        if (currentUser.getId().equals(announcement.getAuthor().getId())) {
-            return true;
-        }
-
-        if (currentUser == null) {
-            // Если пользователь не авторизован, доступ только к объявлениям со статусом APPROVED
-            return announcement.getStatus() == AnnouncementStatus.APPROVED;
-        }
-        // По умолчанию проверяем статус
-        return announcement.getStatus() == requiredStatus;
     }
 
     private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {

@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -44,15 +46,17 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+        http.setSharedObject(HttpFirewall.class, customHttpFirewall());
+         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Отключаем CSRF (для REST API)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-                        .requestMatchers("/announcement/all").permitAll()
-                        .requestMatchers("/announcement/{id}").permitAll()
+                        .requestMatchers("/announcement/allApproved").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/announcement/public/**").permitAll()
                         .requestMatchers("/api/image/**").permitAll()
                         // Требуют аутентификации
+                        .requestMatchers(HttpMethod.GET, "/announcement/private/**").authenticated()
                         .requestMatchers("/announcement/create").authenticated()
                         .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
                         // Для модератора
@@ -66,10 +70,26 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .authenticationEntryPoint(new CustomAuthenticationEntryPoint()) // Если пользователь не авторизован
                         .accessDeniedHandler(new CustomAccessDeniedHandler()) // Если у пользователя недостаточно прав
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Добавляем фильтр JWT
-                .build();
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 
+    @Bean
+    public StrictHttpFirewall customHttpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+
+        // Разрешаем определённые символы
+        firewall.setAllowUrlEncodedSlash(true);
+        firewall.setAllowSemicolon(true);
+        firewall.setAllowBackSlash(true);
+        firewall.setAllowUrlEncodedPercent(true);
+
+        // Отключаем проверку на не-ASCII символы
+        firewall.setUnsafeAllowAnyHttpMethod(true);
+
+        return firewall;
+    }
 
 
     @Bean
