@@ -70,15 +70,13 @@ public class ImageService {
             if (!file.isEmpty()) {
                 Image savedImage = saveImage(file, announcement, isFirstImage);
                 savedImages.add(savedImage);
-
-                // Если это первое изображение, то оно должно стать preview_image
                 if (isFirstImage) {
-                    announcement.setPreviewImageId(savedImage.getId()); // Устанавливаем первое изображение как preview_image
+                    announcement.setPreviewImageId(savedImage.getId());
                 }
                 isFirstImage = false;
             }
         }
-        announcementRepository.save(announcement); // Сохраняем изменения в объявлении
+        announcementRepository.save(announcement);
     }
 
     public void setPreviewImage(Announcement announcement, List<Image> savedImages) {
@@ -93,7 +91,6 @@ public class ImageService {
     public void rollbackSavedImages(List<Image> savedImages, Announcement announcement) {
         for (Image image : savedImages) {
             try {
-                // Передаем объект объявления в deleteImage
                 deleteImage(image, announcement);
             } catch (IOException e) {
                 log.error("Ошибка при удалении изображения: {}", image.getId(), e);

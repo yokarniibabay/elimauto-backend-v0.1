@@ -146,8 +146,9 @@ public class AnnouncementService {
     }
 
     @Transactional
-    public void editAnnouncement(Long id, AnnouncementUpdateRequest updateRequest)
-            throws IOException {
+    public void editAnnouncement(Long id,
+                                 AnnouncementUpdateRequest updateRequest,
+                                 List<MultipartFile> files) throws IOException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
@@ -158,7 +159,7 @@ public class AnnouncementService {
         }
 
         boolean priceChanged = updateRequest.getPrice() != null &&
-                                announcement.getPrice() != updateRequest.getPrice();
+                !announcement.getPrice().equals(updateRequest.getPrice());
         boolean otherFieldsChanged = false;
 
         if (updateRequest.getTitle() != null &&
@@ -177,19 +178,32 @@ public class AnnouncementService {
             otherFieldsChanged = true;
         }
 
+        if (updateRequest.getPrice() != null && !announcement.getPrice().equals(updateRequest.getPrice())) {
+            announcement.setPrice(updateRequest.getPrice());
+            priceChanged = true;
+        }
+
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
-            if (priceChanged || otherFieldsChanged) {
+            if (!(priceChanged && !otherFieldsChanged)) {
                 announcement.setStatus(AnnouncementStatus.PENDING);
             }
+        } else if (announcement.getStatus() == AnnouncementStatus.REJECTED) {
+            announcement.setStatus(AnnouncementStatus.PENDING);
+            announcement.setRejectedAt(null);
         }
 
         if (updateRequest.getImages() != null && !updateRequest.getImages().isEmpty()) {
             List<Image> savedImages = new ArrayList<>();
+
             imageService.saveImages(updateRequest.getImages(), announcement, savedImages);
+
+            for (Image savedImage : savedImages) {
+                if (savedImage.getId().equals(announcement.getPreviewImageId())) {
+                    continue;
+                }
+            }
         }
-
         announcementRepository.save(announcement);
-
     }
 
     @Transactional

@@ -7,6 +7,7 @@ import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -93,9 +94,13 @@ public class AnnouncementController {
     @PutMapping("/edit/{id}")
     public ResponseEntity<String> updateAnnouncement(
             @PathVariable Long id,
-            @RequestBody AnnouncementUpdateRequest updateRequest) {
+            @RequestParam("data") String data,
+            @RequestParam("files") List<MultipartFile> files) {
         try {
-            announcementService.editAnnouncement(id, updateRequest);
+            ObjectMapper objectMapper = new ObjectMapper();
+            AnnouncementUpdateRequest updateRequest = objectMapper.readValue(data, AnnouncementUpdateRequest.class);
+
+            announcementService.editAnnouncement(id, updateRequest, files);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
