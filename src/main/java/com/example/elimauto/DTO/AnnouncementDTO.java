@@ -15,6 +15,7 @@ public class AnnouncementDTO {
     private double price;
     private String city;
     private String authorName;
+    private String authorNumber;
     private String previewImageUrl;
     private List<ImageDTO> images;
     private Long views;

@@ -49,7 +49,7 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
         http.setSharedObject(HttpFirewall.class, customHttpFirewall());
          http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable()) // Отключаем CSRF (для REST API)
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
                         .requestMatchers("/announcement/allApproved").permitAll()
@@ -59,16 +59,17 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .requestMatchers(HttpMethod.GET, "/announcement/private/**").authenticated()
                         .requestMatchers("/announcement/create").authenticated()
                         .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/announcement/edit/**").authenticated()
                         // Для модератора
                         .requestMatchers(HttpMethod.POST, "/announcement/approve/**").hasRole("MODERATOR")
                         .requestMatchers(HttpMethod.POST, "/announcement/reject/**").hasRole("MODERATOR")
                         .requestMatchers(HttpMethod.GET, "/announcement/pending").hasRole("MODERATOR")
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Используем JWT, сессии не храним
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint()) // Если пользователь не авторизован
-                        .accessDeniedHandler(new CustomAccessDeniedHandler()) // Если у пользователя недостаточно прав
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                        .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -79,13 +80,10 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     public StrictHttpFirewall customHttpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
 
-        // Разрешаем определённые символы
         firewall.setAllowUrlEncodedSlash(true);
         firewall.setAllowSemicolon(true);
         firewall.setAllowBackSlash(true);
         firewall.setAllowUrlEncodedPercent(true);
-
-        // Отключаем проверку на не-ASCII символы
         firewall.setUnsafeAllowAnyHttpMethod(true);
 
         return firewall;
@@ -112,8 +110,8 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService); // Ваш сервис, возвращающий UserDetails
-        authProvider.setPasswordEncoder(passwordEncoder()); // Кодировщик паролей
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 

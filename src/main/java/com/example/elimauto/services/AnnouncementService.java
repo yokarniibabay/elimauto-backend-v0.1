@@ -4,6 +4,7 @@ import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.DTO.ImageDTO;
 import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
+import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
 import com.example.elimauto.repositories.AnnouncementRepository;
@@ -52,10 +53,8 @@ public class AnnouncementService {
     public List<AnnouncementDTO> getAnnouncementsByAuthorId(Long authorId) {
         User currentUser = userService.getCurrentUser();
 
-        // Получаем все объявления автора
         List<Announcement> announcements = announcementRepository.findByAuthorId(authorId);
 
-        // Фильтруем объявления по доступу с использованием метода canAccessAnnouncement
         return announcements.stream()
                 .filter(announcement -> accessService.canAccessAnnouncement(announcement.getId(), SecurityContextHolder.getContext().getAuthentication()))
                 .map(this::convertToDto)
@@ -116,6 +115,7 @@ public class AnnouncementService {
         announcement.setPrice(price);
         announcement.setCity(city);
 
+        Announcement savedAnnouncement = null;
         try {
             User currentUser = userService.getCurrentUser();
             if (currentUser == null) {
@@ -128,7 +128,7 @@ public class AnnouncementService {
 
             announcement.setStatus(AnnouncementStatus.PENDING);
 
-            Announcement savedAnnouncement = announcementRepository.save(announcement);
+            savedAnnouncement = announcementRepository.save(announcement);
 
             imageService.saveImages(files, savedAnnouncement, savedImages);
 
@@ -139,9 +139,57 @@ public class AnnouncementService {
 
         } catch (IOException | IllegalStateException e) {
             log.error("Ошибка при создании объявления: {}", e.getMessage());
-            imageService.rollbackSavedImages(savedImages);
+            // Передаем сохраненное объявление в метод rollbackSavedImages
+            imageService.rollbackSavedImages(savedImages, savedAnnouncement);
             throw e;
         }
+    }
+
+    @Transactional
+    public void editAnnouncement(Long id, AnnouncementUpdateRequest updateRequest)
+            throws IOException {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
+
+        User currentUser = userService.getCurrentUser();
+
+        if (!accessService.canAccessAnnouncement(id, SecurityContextHolder.getContext().getAuthentication())) {
+            throw new AccessDeniedException("Недостаточно прав для редактирования данного объявления.");
+        }
+
+        boolean priceChanged = updateRequest.getPrice() != null &&
+                                announcement.getPrice() != updateRequest.getPrice();
+        boolean otherFieldsChanged = false;
+
+        if (updateRequest.getTitle() != null &&
+                !updateRequest.getTitle().equals(announcement.getTitle())) {
+            announcement.setTitle(updateRequest.getTitle());
+            otherFieldsChanged = true;
+        }
+        if (updateRequest.getDescription() != null &&
+                !updateRequest.getDescription().equals(announcement.getDescription())) {
+            announcement.setDescription(updateRequest.getDescription());
+            otherFieldsChanged = true;
+        }
+        if (updateRequest.getCity() != null &&
+                !updateRequest.getCity().equals(announcement.getCity())) {
+            announcement.setCity(updateRequest.getCity());
+            otherFieldsChanged = true;
+        }
+
+        if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
+            if (priceChanged || otherFieldsChanged) {
+                announcement.setStatus(AnnouncementStatus.PENDING);
+            }
+        }
+
+        if (updateRequest.getImages() != null && !updateRequest.getImages().isEmpty()) {
+            List<Image> savedImages = new ArrayList<>();
+            imageService.saveImages(updateRequest.getImages(), announcement, savedImages);
+        }
+
+        announcementRepository.save(announcement);
+
     }
 
     @Transactional
@@ -213,7 +261,10 @@ public class AnnouncementService {
         dto.setPrice(announcement.getPrice());
         dto.setCity(announcement.getCity());
 
-        dto.setAuthorName(announcement.getAuthor() != null ? announcement.getAuthor().getName() : "Неизвестно");
+        dto.setAuthorName(announcement.getAuthor() != null ?
+                announcement.getAuthor().getName() : "Неизвестно");
+        dto.setAuthorNumber(announcement.getAuthor() != null ?
+                announcement.getAuthor().getPhoneNumber() : "Invalid Phone Number");
 
         log.info("Конвертация объявления с ID {}: Превью-изображение ID = {}",
                 announcement.getId(), announcement.getPreviewImageId());

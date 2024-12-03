@@ -3,6 +3,7 @@ package com.example.elimauto.controllers;
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
+import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
@@ -86,6 +87,26 @@ public class AnnouncementController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при сохранении объявления");
+        }
+    }
+
+    @PutMapping("/edit/{id}")
+    public ResponseEntity<String> updateAnnouncement(
+            @PathVariable Long id,
+            @RequestBody AnnouncementUpdateRequest updateRequest) {
+        try {
+            announcementService.editAnnouncement(id, updateRequest);
+            return ResponseEntity.ok("Объявление успешно обновлено.");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Объявление с таким ID не найдено.");
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("У вас нет прав для редактирования этого объявления.");
+        } catch (Exception e) {
+            log.error("Ошибка при редактировании объявления", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Произошла ошибка при обновлении объявления.");
         }
     }
 

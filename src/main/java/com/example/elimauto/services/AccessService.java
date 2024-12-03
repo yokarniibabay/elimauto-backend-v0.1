@@ -20,29 +20,39 @@ public class AccessService {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
-        // 1. Неавторизованные пользователи могут видеть только объявления со статусом APPROVED
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
-            return true; // Одобренные объявления доступны всем
+            return true;
         }
 
-        // 2. Для авторизованных пользователей
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            return false; // Неавторизованные пользователи не имеют доступа к другим объявлениям
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getPrincipal())) {
+            return false;
         }
 
         User currentUser = (User) authentication.getPrincipal();
 
-        // 3. Автор может видеть свои объявления, даже если они в статусе PENDING
         if (currentUser.getId().equals(announcement.getAuthor().getId())) {
-            return true; // Автор может всегда видеть свои объявления
+            return true;
         }
 
-        // 4. Модератор и администратор могут видеть все объявления со статусом PENDING
-        if (currentUser.hasRole("ROLE_MODERATOR") || currentUser.hasRole("ROLE_ADMIN")) {
-            return announcement.getStatus() == AnnouncementStatus.PENDING || announcement.getStatus() == AnnouncementStatus.APPROVED;
+        if (currentUser.hasRole("ROLE_MODERATOR") ||
+                currentUser.hasRole("ROLE_ADMIN")) {
+            return announcement.getStatus() == AnnouncementStatus.PENDING ||
+                    announcement.getStatus() == AnnouncementStatus.APPROVED;
         }
 
-        // 5. Другие пользователи могут видеть только APPROVED объявления
         return false;
+    }
+
+    public boolean canEditAnnouncement(Long id, Authentication authentication) {
+        Announcement announcement = announcementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        return announcement.getAuthor().getId().equals(currentUser.getId()) ||
+                currentUser.hasRole("ROLE_MODERATOR") ||
+                currentUser.hasRole("ROLE_ADMIN");
     }
 }
