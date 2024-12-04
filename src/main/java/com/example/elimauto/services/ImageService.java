@@ -59,9 +59,13 @@ public class ImageService {
         image.setPreviewImage(isPreview);
         image.setAnnouncement(announcement);
 
-        announcement.getImages().add(image);
+        // Сохраняем изображение
+        Image savedImage = imageRepository.save(image);
 
-        return imageRepository.save(image);
+        // Добавляем изображение в коллекцию объявления
+        announcement.getImages().add(savedImage);
+
+        return savedImage;
     }
 
     public void saveImages(List<MultipartFile> files,
@@ -154,10 +158,13 @@ public class ImageService {
         log.info("Изображение с ID {} удалено из коллекции объявления: {}", image.getId(), removed);
 
 
-        if (announcement.getPreviewImageId() != null && announcement.getPreviewImageId().equals(image.getId())) {
+        // Проверяем и обновляем previewImageId, если удаленное изображение было превью
+        if (image.getId().equals(announcement.getPreviewImageId())) {
             if (!announcement.getImages().isEmpty()) {
+                // Устанавливаем новое превью на первое доступное изображение
                 announcement.setPreviewImageId(announcement.getImages().get(0).getId());
             } else {
+                // Если изображений больше нет, сбрасываем previewImageId
                 announcement.setPreviewImageId(null);
             }
             log.info("Preview image обновлено на ID: {}", announcement.getPreviewImageId());

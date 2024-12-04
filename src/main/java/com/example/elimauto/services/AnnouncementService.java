@@ -202,6 +202,9 @@ public class AnnouncementService {
                 imageService.deleteImage(image, announcement);
             }
         }
+        // Обновляем состояние объявления после удаления изображений
+        announcement = announcementRepository.findById(announcement.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
         log.info("Количество изображений после удаления: {}", announcement.getImages().size());
 
