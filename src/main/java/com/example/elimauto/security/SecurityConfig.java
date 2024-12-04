@@ -77,14 +77,15 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     }
 
     @Bean
-    public StrictHttpFirewall customHttpFirewall() {
+    public HttpFirewall customHttpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
 
-        firewall.setAllowUrlEncodedSlash(true);
-        firewall.setAllowSemicolon(true);
-        firewall.setAllowBackSlash(true);
-        firewall.setAllowUrlEncodedPercent(true);
-        firewall.setUnsafeAllowAnyHttpMethod(true);
+        // Разрешаем различные специальные символы
+        firewall.setAllowUrlEncodedSlash(true);  // Разрешаем слеши в URL
+        firewall.setAllowSemicolon(true);        // Разрешаем точку с запятой
+        firewall.setAllowBackSlash(true);        // Разрешаем обратный слеш
+        firewall.setAllowUrlEncodedPercent(true);  // Разрешаем символы % в URL
+        firewall.setUnsafeAllowAnyHttpMethod(true);  // Позволяет любые методы HTTP
 
         return firewall;
     }

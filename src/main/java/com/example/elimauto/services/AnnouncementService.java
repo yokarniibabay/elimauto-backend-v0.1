@@ -148,7 +148,7 @@ public class AnnouncementService {
     @Transactional
     public void editAnnouncement(Long id,
                                  AnnouncementUpdateRequest updateRequest,
-                                 List<MultipartFile> files) throws IOException {
+                                 List<MultipartFile> images) throws IOException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
@@ -192,10 +192,10 @@ public class AnnouncementService {
             announcement.setRejectedAt(null);
         }
 
-        if (updateRequest.getImages() != null && !updateRequest.getImages().isEmpty()) {
+        if (images != null && !images.isEmpty()) {
             List<Image> savedImages = new ArrayList<>();
 
-            imageService.saveImages(updateRequest.getImages(), announcement, savedImages);
+            imageService.saveImages(images, announcement, savedImages);
 
             for (Image savedImage : savedImages) {
                 if (savedImage.getId().equals(announcement.getPreviewImageId())) {

@@ -7,7 +7,6 @@ import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +33,7 @@ public class AnnouncementController {
 
     @GetMapping("/allApproved")
     public ResponseEntity<List<AnnouncementDTO>> getAllPublicAnnouncements() {
-        log.info("Fetching all announcements from the database.");
+        log.info("Fetching all public announcements from the database.");
         List<AnnouncementDTO> announcements = announcementService.getAllApprovedAnnouncements();
         return ResponseEntity.ok(announcements);
     }
@@ -91,15 +90,13 @@ public class AnnouncementController {
         }
     }
 
-    @PutMapping("/edit/{id}")
+    @PostMapping("/edit/{id}")
     public ResponseEntity<String> updateAnnouncement(
             @PathVariable Long id,
-            @RequestParam("data") String data,
-            @RequestParam("files") List<MultipartFile> files) {
+            @ModelAttribute AnnouncementUpdateRequest updateRequest,
+            @RequestParam(value = "images", required = false) List<MultipartFile> files) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            AnnouncementUpdateRequest updateRequest = objectMapper.readValue(data, AnnouncementUpdateRequest.class);
-
+            log.info("Request received: /announcement/edit/{} with data: {}", id, updateRequest);
             announcementService.editAnnouncement(id, updateRequest, files);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {
