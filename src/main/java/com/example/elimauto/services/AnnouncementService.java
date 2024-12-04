@@ -199,23 +199,21 @@ public class AnnouncementService {
                 if (!image.getAnnouncement().getId().equals(announcement.getId())) {
                     throw new AccessDeniedException("Недостаточно прав для удаления данного изображения.");
                 }
-
                 imageService.deleteImage(image, announcement);
             }
         }
 
+        log.info("Количество изображений после удаления: {}", announcement.getImages().size());
+
         if (images != null && !images.isEmpty()) {
             List<Image> savedImages = new ArrayList<>();
-
             imageService.saveImages(images, announcement, savedImages);
-
-            if (announcement.getPreviewImageId() == null && !savedImages.isEmpty()) {
-                announcement.setPreviewImageId(savedImages.get(0).getId());
-            }
         }
 
+        // Проверяем и обновляем previewImageId
         if (announcement.getPreviewImageId() == null && !announcement.getImages().isEmpty()) {
             announcement.setPreviewImageId(announcement.getImages().get(0).getId());
+            log.info("Новое previewImageId установлено: {}", announcement.getPreviewImageId());
         }
 
         announcementRepository.save(announcement);

@@ -150,9 +150,9 @@ public class ImageService {
     public void deleteImage(Image image, Announcement announcement) throws IOException {
         fileStorageService.deleteFile(image.getPath());
 
-        announcement.getImages().remove(image);
+        boolean removed = announcement.getImages().remove(image);
+        log.info("Изображение с ID {} удалено из коллекции объявления: {}", image.getId(), removed);
 
-        imageRepository.delete(image);
 
         if (announcement.getPreviewImageId() != null && announcement.getPreviewImageId().equals(image.getId())) {
             if (!announcement.getImages().isEmpty()) {
@@ -160,6 +160,7 @@ public class ImageService {
             } else {
                 announcement.setPreviewImageId(null);
             }
+            log.info("Preview image обновлено на ID: {}", announcement.getPreviewImageId());
         }
     }
 

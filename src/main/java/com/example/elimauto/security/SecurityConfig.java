@@ -46,7 +46,6 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.setSharedObject(HttpFirewall.class, customHttpFirewall());
          http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -72,24 +71,8 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .accessDeniedHandler(new CustomAccessDeniedHandler())
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
-
-    @Bean
-    public HttpFirewall customHttpFirewall() {
-        StrictHttpFirewall firewall = new StrictHttpFirewall();
-
-        // Разрешаем различные специальные символы
-        firewall.setAllowUrlEncodedSlash(true);  // Разрешаем слеши в URL
-        firewall.setAllowSemicolon(true);        // Разрешаем точку с запятой
-        firewall.setAllowBackSlash(true);        // Разрешаем обратный слеш
-        firewall.setAllowUrlEncodedPercent(true);  // Разрешаем символы % в URL
-        firewall.setUnsafeAllowAnyHttpMethod(true);  // Позволяет любые методы HTTP
-
-        return firewall;
-    }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

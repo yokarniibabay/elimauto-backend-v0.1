@@ -33,4 +33,19 @@ public class Image {
     @JsonBackReference
     @JoinColumn(name = "announcement_id", nullable = false)
     private Announcement announcement;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Image image = (Image) o;
+
+        return id != null ? id.equals(image.id) : image.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
 }
