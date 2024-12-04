@@ -71,6 +71,10 @@ public class ImageService {
     public void saveImages(List<MultipartFile> files,
                            Announcement announcement,
                            List<Image> savedImages) throws IOException {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+
         boolean isFirstImage = true;
 
         for (MultipartFile file : files) {

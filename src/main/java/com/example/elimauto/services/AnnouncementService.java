@@ -279,7 +279,7 @@ public class AnnouncementService {
         if (city == null || city.isBlank()) {
             throw new IllegalArgumentException("Город не может быть пустым.");
         }
-        if (files.size() > 20) {
+        if (files != null && files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
     }
