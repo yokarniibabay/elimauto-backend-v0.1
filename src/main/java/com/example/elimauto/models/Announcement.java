@@ -42,7 +42,8 @@ public class Announcement {
     private User author;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY,
-    mappedBy = "announcement")
+    mappedBy = "announcement",
+            orphanRemoval = true)
     @JsonManagedReference
     private List<Image> images = new ArrayList<>();
 

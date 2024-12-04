@@ -9,6 +9,7 @@ import com.example.elimauto.models.Image;
 import com.example.elimauto.models.User;
 import com.example.elimauto.repositories.AnnouncementRepository;
 
+import com.example.elimauto.repositories.ImageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
+    private final ImageRepository imageRepository;
     private final ImageService imageService;
     private final UserService userService;
     private final AccessService accessService;
@@ -62,28 +64,24 @@ public class AnnouncementService {
     }
 
     public AnnouncementDTO getAnnouncementById(Long id) throws AccessDeniedException {
-        // Получаем объявление по ID
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
-        // Получаем текущего пользователя, если он авторизован
         User currentUser = userService.getCurrentUserIfAuthenticated();
 
-        // Проверяем доступ с использованием метода canAccessAnnouncement
         if (!accessService.canAccessAnnouncement(id, SecurityContextHolder.getContext().getAuthentication())) {
             throw new AccessDeniedException("Недостаточно прав для просмотра данного объявления.");
         }
 
-        // Конвертируем объявление в DTO и возвращаем
         return convertToDto(announcement);
     }
 
     public AnnouncementDTO getPublicAnnouncementById(Long id) {
-        // Находим объявление по ID
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
-        // Проверяем, что статус объявления APPROVED
+        incrementViews(id);
+
         if (announcement.getStatus() != AnnouncementStatus.APPROVED) {
             try {
                 throw new AccessDeniedException("Объявление с ID " + id + " не опубликовано.");
@@ -92,7 +90,6 @@ public class AnnouncementService {
             }
         }
 
-        // Конвертируем в DTO и возвращаем
         return convertToDto(announcement);
     }
 
@@ -148,7 +145,8 @@ public class AnnouncementService {
     @Transactional
     public void editAnnouncement(Long id,
                                  AnnouncementUpdateRequest updateRequest,
-                                 List<MultipartFile> images) throws IOException {
+                                 List<MultipartFile> images,
+                                 List<Long> imagesToDelete) throws IOException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
@@ -183,6 +181,8 @@ public class AnnouncementService {
             priceChanged = true;
         }
 
+        log.info("Пользователь с ID {} редактирует объявление с ID {}", currentUser.getId(), announcement.getId());
+
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
             if (!(priceChanged && !otherFieldsChanged)) {
                 announcement.setStatus(AnnouncementStatus.PENDING);
@@ -192,17 +192,32 @@ public class AnnouncementService {
             announcement.setRejectedAt(null);
         }
 
+        if (imagesToDelete != null && !imagesToDelete.isEmpty()) {
+            for (Long imageId : imagesToDelete) {
+                Image image = imageRepository.findById(imageId)
+                        .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено."));
+                if (!image.getAnnouncement().getId().equals(announcement.getId())) {
+                    throw new AccessDeniedException("Недостаточно прав для удаления данного изображения.");
+                }
+
+                imageService.deleteImage(image, announcement);
+            }
+        }
+
         if (images != null && !images.isEmpty()) {
             List<Image> savedImages = new ArrayList<>();
 
             imageService.saveImages(images, announcement, savedImages);
 
-            for (Image savedImage : savedImages) {
-                if (savedImage.getId().equals(announcement.getPreviewImageId())) {
-                    continue;
-                }
+            if (announcement.getPreviewImageId() == null && !savedImages.isEmpty()) {
+                announcement.setPreviewImageId(savedImages.get(0).getId());
             }
         }
+
+        if (announcement.getPreviewImageId() == null && !announcement.getImages().isEmpty()) {
+            announcement.setPreviewImageId(announcement.getImages().get(0).getId());
+        }
+
         announcementRepository.save(announcement);
     }
 

@@ -59,21 +59,25 @@ public class ImageService {
         image.setPreviewImage(isPreview);
         image.setAnnouncement(announcement);
 
+        announcement.getImages().add(image);
+
         return imageRepository.save(image);
     }
 
     public void saveImages(List<MultipartFile> files,
                            Announcement announcement,
                            List<Image> savedImages) throws IOException {
-        boolean isFirstImage = true;
+        boolean isFirstImage = announcement.getImages().isEmpty();
+
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                Image savedImage = saveImage(file, announcement, isFirstImage);
+                Image savedImage = saveImage(file, announcement, false);
                 savedImages.add(savedImage);
+
                 if (isFirstImage) {
                     announcement.setPreviewImageId(savedImage.getId());
+                    isFirstImage = false;
                 }
-                isFirstImage = false;
             }
         }
         announcementRepository.save(announcement);
@@ -144,23 +148,19 @@ public class ImageService {
     }
 
     public void deleteImage(Image image, Announcement announcement) throws IOException {
-        // Если это изображение является preview_image, нужно переназначить его
-        if (announcement.getPreviewImageId().equals(image.getId())) {
-            // Назначаем новое изображение или null, если больше нет изображений
-            List<Image> images = imageRepository.findByAnnouncementId(announcement.getId());
-            if (!images.isEmpty()) {
-                // Устанавливаем первое доступное изображение как preview_image
-                announcement.setPreviewImageId(images.get(0).getId());
+        fileStorageService.deleteFile(image.getPath());
+
+        announcement.getImages().remove(image);
+
+        imageRepository.delete(image);
+
+        if (announcement.getPreviewImageId() != null && announcement.getPreviewImageId().equals(image.getId())) {
+            if (!announcement.getImages().isEmpty()) {
+                announcement.setPreviewImageId(announcement.getImages().get(0).getId());
             } else {
-                // Если нет изображений, сбрасываем preview_image
                 announcement.setPreviewImageId(null);
             }
-            announcementRepository.save(announcement);
         }
-
-        // Удаляем файл и запись изображения
-        fileStorageService.deleteFile(image.getPath());
-        imageRepository.delete(image);
     }
 
     public void deleteImagesByAnnouncement(Announcement announcement) throws IOException {

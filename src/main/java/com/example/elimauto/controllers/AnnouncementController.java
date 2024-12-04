@@ -94,10 +94,11 @@ public class AnnouncementController {
     public ResponseEntity<String> updateAnnouncement(
             @PathVariable Long id,
             @ModelAttribute AnnouncementUpdateRequest updateRequest,
-            @RequestParam(value = "images", required = false) List<MultipartFile> files) {
+            @RequestParam(value = "images", required = false) List<MultipartFile> files,
+            @RequestParam(value = "imagesToDelete", required = false) List<Long> imagesToDelete) {
         try {
             log.info("Request received: /announcement/edit/{} with data: {}", id, updateRequest);
-            announcementService.editAnnouncement(id, updateRequest, files);
+            announcementService.editAnnouncement(id, updateRequest, files, imagesToDelete);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
