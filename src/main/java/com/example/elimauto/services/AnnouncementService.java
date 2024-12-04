@@ -96,23 +96,22 @@ public class AnnouncementService {
 
 
     @Transactional
-    public void createAnnouncement(String title,
-                                   String description,
-                                   double price,
-                                   String city,
-                                   List<MultipartFile> files) throws IOException {
-        validateInputs(title, description, price, city, files);
+    public void createAnnouncement(AnnouncementUpdateRequest updateRequest,
+                                   List<MultipartFile> images) throws IOException {
+        validateInputs(updateRequest.getTitle(),
+                updateRequest.getDescription(),
+                updateRequest.getPrice(),
+                updateRequest.getCity(),
+                images);
 
         List<Image> savedImages = new ArrayList<>();
-        boolean isFirstImage = true;
 
         Announcement announcement = new Announcement();
-        announcement.setTitle(title);
-        announcement.setDescription(description);
-        announcement.setPrice(price);
-        announcement.setCity(city);
+        announcement.setTitle(updateRequest.getTitle());
+        announcement.setDescription(updateRequest.getDescription());
+        announcement.setPrice(updateRequest.getPrice());
+        announcement.setCity(updateRequest.getCity());
 
-        Announcement savedAnnouncement = null;
         try {
             User currentUser = userService.getCurrentUser();
             if (currentUser == null) {
@@ -125,19 +124,21 @@ public class AnnouncementService {
 
             announcement.setStatus(AnnouncementStatus.PENDING);
 
-            savedAnnouncement = announcementRepository.save(announcement);
+            announcementRepository.save(announcement);
 
-            imageService.saveImages(files, savedAnnouncement, savedImages);
+            if (images != null && !images.isEmpty()) {
+                imageService.saveImages(images, announcement, savedImages);
+                if (announcement.getPreviewImageId() == null && !savedImages.isEmpty()) {
+                    announcement.setPreviewImageId(savedImages.get(0).getId());
+                }
+            }
 
-            imageService.setPreviewImage(savedAnnouncement, savedImages);
-
-            announcementRepository.save(savedAnnouncement);
-            log.info("Создано объявление с ID: {}", savedAnnouncement.getId());
+            announcementRepository.save(announcement);
+            log.info("Создано объявление с ID: {}", announcement.getId());
 
         } catch (IOException | IllegalStateException e) {
             log.error("Ошибка при создании объявления: {}", e.getMessage());
-            // Передаем сохраненное объявление в метод rollbackSavedImages
-            imageService.rollbackSavedImages(savedImages, savedAnnouncement);
+            imageService.rollbackSavedImages(savedImages, announcement);
             throw e;
         }
     }

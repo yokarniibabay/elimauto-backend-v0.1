@@ -75,13 +75,11 @@ public class AnnouncementController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<String> createAnnouncement(@RequestParam("title") String title,
-                                                     @RequestParam("description") String description,
-                                                     @RequestParam("price") double price,
-                                                     @RequestParam("city") String city,
-                                                     @RequestParam("files") MultipartFile[] files) {
+    public ResponseEntity<String> createAnnouncement(
+            @ModelAttribute AnnouncementUpdateRequest updateRequest,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
         try {
-            announcementService.createAnnouncement(title, description, price, city, Arrays.asList(files));
+            announcementService.createAnnouncement(updateRequest, images);
             return ResponseEntity.status(HttpStatus.CREATED).body("Объявление создано успешно");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
