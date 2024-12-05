@@ -1,6 +1,8 @@
 package com.example.elimauto.controllers;
 
+import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
+import com.example.elimauto.repositories.AnnouncementRepository;
 import com.example.elimauto.repositories.ImageRepository;
 import com.example.elimauto.services.AnnouncementService;
 import com.example.elimauto.services.FileStorageService;
@@ -25,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ImageController {
     private final ImageRepository imageRepository;
+    private final AnnouncementRepository announcementRepository;
     private final AnnouncementService announcementService;
     private final FileStorageService fileStorageService;
 
@@ -74,12 +77,25 @@ public class ImageController {
 
     @GetMapping("/preview/{announcementId}")
     public ResponseEntity<ByteArrayResource> getPreviewImage(@PathVariable Long announcementId) throws IOException {
-        Image previewImage = imageRepository.findFirstByAnnouncementIdAndIsPreviewImageTrue(announcementId)
+        // Находим объявление по ID
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new RuntimeException("Announcement not found"));
+
+        // Получаем ID превью-изображения
+        Long previewImageId = announcement.getPreviewImageId();
+        if (previewImageId == null) {
+            throw new RuntimeException("No preview image set for this announcement");
+        }
+
+        // Находим изображение по ID
+        Image previewImage = imageRepository.findById(previewImageId)
                 .orElseThrow(() -> new RuntimeException("Preview image not found"));
 
+        // Получаем путь к файлу
         Path path = fileStorageService.getStorageDirectory().resolve(previewImage.getPath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
+        // Возвращаем изображение с правильным content-type
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(previewImage.getContentType()))
                 .body(resource);

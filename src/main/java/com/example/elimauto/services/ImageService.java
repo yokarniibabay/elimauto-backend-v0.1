@@ -156,22 +156,25 @@ public class ImageService {
     }
 
     public void deleteImage(Image image, Announcement announcement) throws IOException {
-        fileStorageService.deleteFile(image.getPath());
+        try {
+            fileStorageService.deleteFile(image.getPath());
+            log.info("Файл изображения с ID {} удален с пути: {}", image.getId(), image.getPath());
 
-        boolean removed = announcement.getImages().remove(image);
-        log.info("Изображение с ID {} удалено из коллекции объявления: {}", image.getId(), removed);
+            boolean removed = announcement.getImages().remove(image);
+            log.info("Изображение с ID {} удалено из коллекции объявления: {}", image.getId(), removed);
 
-
-        // Проверяем и обновляем previewImageId, если удаленное изображение было превью
-        if (image.getId().equals(announcement.getPreviewImageId())) {
-            if (!announcement.getImages().isEmpty()) {
-                // Устанавливаем новое превью на первое доступное изображение
-                announcement.setPreviewImageId(announcement.getImages().get(0).getId());
-            } else {
-                // Если изображений больше нет, сбрасываем previewImageId
-                announcement.setPreviewImageId(null);
+            if (image.getId().equals(announcement.getPreviewImageId())) {
+                if (!announcement.getImages().isEmpty()) {
+                    announcement.setPreviewImageId(announcement.getImages().get(0).getId());
+                    log.info("Preview image обновлено на ID: {}", announcement.getPreviewImageId());
+                } else {
+                    announcement.setPreviewImageId(null);
+                    log.info("Все изображения удалены, previewImageId сброшен.");
+                }
             }
-            log.info("Preview image обновлено на ID: {}", announcement.getPreviewImageId());
+        } catch (IOException e) {
+            log.error("Ошибка при удалении изображения с ID {}: {}", image.getId(), e.getMessage());
+            throw e;
         }
     }
 

@@ -193,6 +193,7 @@ public class AnnouncementService {
             announcement.setRejectedAt(null);
         }
 
+        // Удаляем изображения, если нужно
         if (imagesToDelete != null && !imagesToDelete.isEmpty()) {
             for (Long imageId : imagesToDelete) {
                 Image image = imageRepository.findById(imageId)
@@ -203,12 +204,14 @@ public class AnnouncementService {
                 imageService.deleteImage(image, announcement);
             }
         }
+
         // Обновляем состояние объявления после удаления изображений
         announcement = announcementRepository.findById(announcement.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
         log.info("Количество изображений после удаления: {}", announcement.getImages().size());
 
+        // Сохраняем новые изображения
         if (images != null && !images.isEmpty()) {
             List<Image> savedImages = new ArrayList<>();
             imageService.saveImages(images, announcement, savedImages);
