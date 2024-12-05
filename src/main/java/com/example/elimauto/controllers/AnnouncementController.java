@@ -7,6 +7,7 @@ import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -93,9 +95,11 @@ public class AnnouncementController {
             @PathVariable Long id,
             @ModelAttribute AnnouncementUpdateRequest updateRequest,
             @RequestParam(value = "images", required = false) List<MultipartFile> files,
-            @RequestParam(value = "imagesToDelete", required = false) List<Long> imagesToDelete) {
+            @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteStr) {
         try {
             log.info("Request received: /announcement/edit/{} with data: {}", id, updateRequest);
+            List<Long> imagesToDelete = imagesToDeleteStr != null ?
+                    Arrays.asList(new ObjectMapper().readValue(imagesToDeleteStr, Long[].class)) : new ArrayList<>();
             announcementService.editAnnouncement(id, updateRequest, files, imagesToDelete);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {
