@@ -263,6 +263,12 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Announcement not found"));
 
+        User currentUser = userService.getCurrentUser();
+
+        if (!accessService.canAccessAnnouncement(id, SecurityContextHolder.getContext().getAuthentication())) {
+            throw new AccessDeniedException("Недостаточно прав для редактирования данного объявления.");
+        }
+
         imageService.deleteImagesByAnnouncement(announcement);
 
         announcementRepository.delete(announcement);
