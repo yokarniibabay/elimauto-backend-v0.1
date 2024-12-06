@@ -45,6 +45,7 @@ public class Announcement {
     mappedBy = "announcement",
             orphanRemoval = true)
     @JsonManagedReference
+    @OrderBy("order ASC")
     private List<Image> images = new ArrayList<>();
 
     private Long previewImageId;

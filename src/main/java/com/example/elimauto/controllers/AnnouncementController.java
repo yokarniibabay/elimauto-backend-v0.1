@@ -7,7 +7,6 @@ import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -20,8 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -91,16 +88,12 @@ public class AnnouncementController {
     }
 
     @PostMapping("/edit/{id}")
-    public ResponseEntity<String> updateAnnouncement(
+    public ResponseEntity<String> editAnnouncement(
             @PathVariable Long id,
-            @ModelAttribute AnnouncementUpdateRequest updateRequest,
-            @RequestParam(value = "images", required = false) List<MultipartFile> files,
-            @RequestParam(value = "imagesToDelete", required = false) String imagesToDeleteStr) {
+            @ModelAttribute AnnouncementUpdateRequest updateRequest) {
         try {
             log.info("Request received: /announcement/edit/{} with data: {}", id, updateRequest);
-            List<Long> imagesToDelete = imagesToDeleteStr != null ?
-                    Arrays.asList(new ObjectMapper().readValue(imagesToDeleteStr, Long[].class)) : new ArrayList<>();
-            announcementService.editAnnouncement(id, updateRequest, files, imagesToDelete);
+            announcementService.editAnnouncement(id, updateRequest);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -108,6 +101,9 @@ public class AnnouncementController {
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("У вас нет прав для редактирования этого объявления.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Некорректные данные: " + e.getMessage());
         } catch (Exception e) {
             log.error("Ошибка при редактировании объявления", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

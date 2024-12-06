@@ -21,8 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -144,10 +143,7 @@ public class AnnouncementService {
     }
 
     @Transactional
-    public void editAnnouncement(Long id,
-                                 AnnouncementUpdateRequest updateRequest,
-                                 List<MultipartFile> images,
-                                 List<Long> imagesToDelete) throws IOException {
+    public void editAnnouncement(Long id, AnnouncementUpdateRequest request) throws IOException {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
 
@@ -157,32 +153,25 @@ public class AnnouncementService {
             throw new AccessDeniedException("Недостаточно прав для редактирования данного объявления.");
         }
 
-        boolean priceChanged = updateRequest.getPrice() != null &&
-                !announcement.getPrice().equals(updateRequest.getPrice());
-        boolean otherFieldsChanged = false;
-
-        if (updateRequest.getTitle() != null &&
-                !updateRequest.getTitle().equals(announcement.getTitle())) {
-            announcement.setTitle(updateRequest.getTitle());
-            otherFieldsChanged = true;
+        // Обновление основных полей
+        if (request.getTitle() != null && !request.getTitle().equals(announcement.getTitle())) {
+            announcement.setTitle(request.getTitle());
         }
-        if (updateRequest.getDescription() != null &&
-                !updateRequest.getDescription().equals(announcement.getDescription())) {
-            announcement.setDescription(updateRequest.getDescription());
-            otherFieldsChanged = true;
+        if (request.getDescription() != null && !request.getDescription().equals(announcement.getDescription())) {
+            announcement.setDescription(request.getDescription());
         }
-        if (updateRequest.getCity() != null &&
-                !updateRequest.getCity().equals(announcement.getCity())) {
-            announcement.setCity(updateRequest.getCity());
-            otherFieldsChanged = true;
+        if (request.getCity() != null && !request.getCity().equals(announcement.getCity())) {
+            announcement.setCity(request.getCity());
         }
-
-        if (updateRequest.getPrice() != null && !announcement.getPrice().equals(updateRequest.getPrice())) {
-            announcement.setPrice(updateRequest.getPrice());
-            priceChanged = true;
+        if (request.getPrice() != null && !announcement.getPrice().equals(request.getPrice())) {
+            announcement.setPrice(request.getPrice());
         }
 
         log.info("Пользователь с ID {} редактирует объявление с ID {}", currentUser.getId(), announcement.getId());
+
+        // Обновление статуса объявления
+        boolean priceChanged = request.getPrice() != null && !announcement.getPrice().equals(request.getPrice());
+        boolean otherFieldsChanged = request.getTitle() != null || request.getDescription() != null || request.getCity() != null;
 
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
             if (!(priceChanged && !otherFieldsChanged)) {
@@ -193,9 +182,9 @@ public class AnnouncementService {
             announcement.setRejectedAt(null);
         }
 
-        // Удаляем изображения, если нужно
-        if (imagesToDelete != null && !imagesToDelete.isEmpty()) {
-            for (Long imageId : imagesToDelete) {
+        // 1. Удаление изображений
+        if (request.getImagesToDelete() != null && !request.getImagesToDelete().isEmpty()) {
+            for (Long imageId : request.getImagesToDelete()) {
                 Image image = imageRepository.findById(imageId)
                         .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено."));
                 if (!image.getAnnouncement().getId().equals(announcement.getId())) {
@@ -205,26 +194,78 @@ public class AnnouncementService {
             }
         }
 
-        // Обновляем состояние объявления после удаления изображений
-        announcement = announcementRepository.findById(announcement.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
-
         log.info("Количество изображений после удаления: {}", announcement.getImages().size());
 
-        // Сохраняем новые изображения
-        if (images != null && !images.isEmpty()) {
-            List<Image> savedImages = new ArrayList<>();
-            imageService.saveImages(images, announcement, savedImages);
+        // 2. Сохранение новых изображений
+        Map<String, Image> tempIdToImageMap = new HashMap<>();
+        if (request.getNewImages() != null && !request.getNewImages().isEmpty()) {
+            int tempCounter = 1;
+            for (MultipartFile file : request.getNewImages()) {
+                String tempId = "temp_" + tempCounter++;
+                Image newImage = imageService.saveImage(file, announcement, false);
+                tempIdToImageMap.put(tempId, newImage);
+            }
         }
 
-        // Проверяем и обновляем previewImageId
-        if (announcement.getPreviewImageId() == null && !announcement.getImages().isEmpty()) {
-            announcement.setPreviewImageId(announcement.getImages().get(0).getId());
-            log.info("Новое previewImageId установлено: {}", announcement.getPreviewImageId());
+        log.info("Добавлено новых изображений: {}", tempIdToImageMap.size());
+
+        // 3. Обновление порядка изображений
+        List<Image> updatedImages = new ArrayList<>();
+
+        if (request.getOrderedImageIds() != null && !request.getOrderedImageIds().isEmpty()) {
+            for (String identifier : request.getOrderedImageIds()) {
+                Image image;
+                if (isNumeric(identifier)) { // Проверяем, является ли идентификатор числом (существующий ID)
+                    Long imageId = Long.parseLong(identifier);
+                    image = imageRepository.findById(imageId)
+                            .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено."));
+                } else { // Иначе, это временный ID для нового изображения
+                    image = tempIdToImageMap.get(identifier);
+                    if (image == null) {
+                        throw new IllegalArgumentException("Некорректный идентификатор изображения: " + identifier);
+                    }
+                }
+                updatedImages.add(image);
+            }
         }
 
+        // Устанавливаем новый порядок для всех изображений
+        for (int i = 0; i < updatedImages.size(); i++) {
+            updatedImages.get(i).setOrder(i);
+        }
+
+        // Обновляем список изображений в объявлении
+        announcement.setImages(updatedImages);
+
+        log.info("Порядок изображений обновлен.");
+
+        // 4. Установка previewImageId
+        if (request.getPreviewImageId() != null) {
+            Image previewImage;
+            if (isNumeric(request.getPreviewImageId())) {
+                Long previewId = Long.parseLong(request.getPreviewImageId());
+                previewImage = imageRepository.findById(previewId)
+                        .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + previewId + " не найдено."));
+            } else {
+                previewImage = tempIdToImageMap.get(request.getPreviewImageId());
+                if (previewImage == null) {
+                    throw new IllegalArgumentException("Некорректный идентификатор previewImage: " + request.getPreviewImageId());
+                }
+            }
+            announcement.setPreviewImageId(previewImage.getId());
+            log.info("previewImageId установлено на ID: {}", previewImage.getId());
+        } else if (!updatedImages.isEmpty()) {
+            // Если previewImageId не указан, устанавливаем первое изображение как preview
+            Image firstImage = updatedImages.get(0);
+            announcement.setPreviewImageId(firstImage.getId());
+            log.info("previewImageId установлено на ID: {}", firstImage.getId());
+        }
+
+        // 5. Сохранение изменений
         announcementRepository.save(announcement);
+        log.info("Объявление с ID {} обновлено успешно.", announcement.getId());
     }
+
 
     @Transactional
     public void updateAnnouncementStatus(Long id, AnnouncementStatus status) {
@@ -291,6 +332,24 @@ public class AnnouncementService {
         if (files != null && files.size() > 20) {
             throw new IllegalArgumentException("Нельзя загрузить более 20 изображений.");
         }
+    }
+
+    // Вспомогательные методы
+
+    private boolean isNumeric(String str) {
+        if (str == null) {
+            return false;
+        }
+        try {
+            Long.parseLong(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private String generateTempId() {
+        return "temp_" + UUID.randomUUID().toString();
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {

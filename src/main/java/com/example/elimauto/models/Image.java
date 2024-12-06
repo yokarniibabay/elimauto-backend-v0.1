@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "images")
 @Data
@@ -34,6 +36,8 @@ public class Image {
     @JoinColumn(name = "announcement_id", nullable = false)
     private Announcement announcement;
 
+    private Integer order;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -41,7 +45,7 @@ public class Image {
 
         Image image = (Image) o;
 
-        return id != null ? id.equals(image.id) : image.id == null;
+        return Objects.equals(id, image.id);
     }
 
     @Override
