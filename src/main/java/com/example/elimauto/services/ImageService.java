@@ -58,7 +58,7 @@ public class ImageService {
         image.setPath(fileName);
         image.setPreviewImage(isPreview);
         image.setAnnouncement(announcement);
-        image.setOrder(announcement.getImages().size() - 1);
+        image.setDisplayOrder(announcement.getImages().size() - 1);
 
         // Сохраняем изображение
         Image savedImage = imageRepository.save(image);

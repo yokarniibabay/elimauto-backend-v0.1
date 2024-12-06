@@ -36,7 +36,8 @@ public class Image {
     @JoinColumn(name = "announcement_id", nullable = false)
     private Announcement announcement;
 
-    private Integer order;
+    @Column(name = "display_order")
+    private Integer displayOrder;
 
     @Override
     public boolean equals(Object o) {
