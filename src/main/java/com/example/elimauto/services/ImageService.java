@@ -4,6 +4,7 @@ import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.Image;
 import com.example.elimauto.repositories.AnnouncementRepository;
 import com.example.elimauto.repositories.ImageRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -80,16 +80,170 @@ public class ImageService {
 
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                Image savedImage = saveImage(file, announcement, false);
-                savedImages.add(savedImage);
+                Image newImage = new Image();
+                newImage.setName(UUID.randomUUID() + ".jpeg");
+                newImage.setContentType(file.getContentType());
+
+                byte[] processedBytes = processImage(file);
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(processedBytes)) {
+                    fileStorageService.storeFile(bais, newImage.getName());
+                }
+
+                newImage.setPath(newImage.getName());
+                newImage.setPreviewImage(false);
+                newImage.setAnnouncement(announcement);
+                newImage.setDisplayOrder(announcement.getImages().size());
+
+                announcement.getImages().add(newImage);
+                savedImages.add(newImage);
 
                 if (isFirstImage) {
-                    announcement.setPreviewImageId(savedImage.getId());
                     isFirstImage = false;
                 }
             }
         }
-        announcementRepository.save(announcement);
+    }
+
+    public void saveNewImages(Announcement announcement,
+                               List<MultipartFile> newImages,
+                               Map<String, Image> tempIdToImageMap) throws IOException {
+        int tempCounter = 1;
+        for (MultipartFile file : newImages) {
+            String tempId = "temp_" + tempCounter++;
+            Image newImage = saveImage(file, announcement, false);
+            tempIdToImageMap.put(tempId, newImage);
+        }
+    }
+
+    public void updateImageOrder(Announcement announcement,
+                                 List<String> orderedImageIds,
+                                 Map<String, Image> tempIdToImageMap) {
+        // Логируем входные параметры и текущее состояние
+        log.debug("updateImageOrder called with announcementId: {}", announcement.getId());
+        log.debug("orderedImageIds: {}", orderedImageIds);
+        log.debug("Images in announcement before reorder: {}", announcement.getImages());
+        log.debug("tempIdToImageMap keys: {}", tempIdToImageMap.keySet());
+
+        List<Image> updatedImages = new ArrayList<>();
+
+        // Создаём карту для быстрого поиска существующих изображений
+        Map<Long, Image> existingImagesMap = announcement.getImages().stream()
+                .collect(Collectors.toMap(Image::getId, img -> img));
+
+        for (String id : orderedImageIds) {
+            log.debug("Processing orderedImageId: {}", id);
+
+            Image image;
+            if (isNumeric(id)) {
+                // Считаем, что это существующее изображение
+                Long imageId = Long.parseLong(id);
+                log.debug("Trying to find existing image with ID: {}", imageId);
+                image = existingImagesMap.get(imageId);
+                if (image == null) {
+                    log.debug("Image with ID {} not found among announcement images", imageId);
+                    throw new EntityNotFoundException("Существующее изображение с ID " + imageId + " не найдено в объявлении.");
+                } else {
+                    log.debug("Found existing image: {}", image);
+                }
+            } else {
+                // Это новый image по tempId
+                log.debug("Trying to find new image with tempId: {}", id);
+                image = tempIdToImageMap.get(id);
+                if (image == null) {
+                    log.debug("New image with tempId '{}' not found in tempIdToImageMap", id);
+                    throw new EntityNotFoundException("Новое изображение с tempId '" + id + "' не найдено.");
+                } else {
+                    log.debug("Found new image: {}", image);
+                }
+            }
+
+            updatedImages.add(image);
+        }
+
+        log.debug("All images found. updatedImages size: {}", updatedImages.size());
+
+        // Очищаем текущую коллекцию изображений и добавляем обновлённые по одному
+        List<Image> currentImages = announcement.getImages();
+        currentImages.clear();
+        log.debug("Current images cleared. Current size: {}", currentImages.size());
+
+        for (int i = 0; i < updatedImages.size(); i++) {
+            Image img = updatedImages.get(i);
+            img.setDisplayOrder(i);
+            announcement.addImageToAnnouncement(img);
+            log.debug("Set displayOrder={} for image with ID={} and added to announcement", i, img.getId());
+        }
+
+        log.debug("Final images in announcement after reorder: {}", announcement.getImages());
+    }
+
+    public void updatePreviewImage(Announcement announcement,
+                                    String previewImageId,
+                                    Map<String, Image> tempIdToImageMap) {
+
+        if (previewImageId != null) {
+            Image previewImage;
+
+            if (isNumeric(previewImageId)) {
+                // Идентификатор существует в базе данных
+                Long previewId = Long.parseLong(previewImageId);
+                previewImage = imageRepository.findById(previewId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Изображение с ID " + previewId + " не найдено."));
+            } else {
+                // Идентификатор временный (для новых изображений)
+                previewImage = tempIdToImageMap.get(previewImageId);
+                if (previewImage == null) {
+                    throw new IllegalArgumentException("Некорректный идентификатор previewImage: " + previewImageId);
+                }
+            }
+
+            // Сбрасываем старое изображение, если оно было установлено как превью
+            if (announcement.getPreviewImageId() != null) {
+                Image oldPreviewImage = imageRepository.findById(announcement.getPreviewImageId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Изображение с ID "
+                                        + announcement.getPreviewImageId() + " не найдено."));
+                oldPreviewImage.setPreviewImage(false);
+                imageRepository.save(oldPreviewImage);
+            }
+
+            // Устанавливаем новое изображение как превью
+            previewImage.setPreviewImage(true);
+            imageRepository.save(previewImage);
+
+            // Обновляем поле previewImageId у объявления
+            announcement.setPreviewImageId(previewImage.getId());
+            log.info("previewImageId установлено на ID: {}", previewImage.getId());
+
+        } else if (!announcement.getImages().isEmpty()) {
+            // Если previewImageId не передан, ставим первое изображение как превью
+            Image firstImage = announcement.getImages().get(0);
+            firstImage.setPreviewImage(true);
+            imageRepository.save(firstImage);
+            announcement.setPreviewImageId(firstImage.getId());
+            log.info("previewImageId установлено на ID: {}", firstImage.getId());
+        }
+    }
+
+    public void deleteImages(Announcement announcement, List<Long> imagesToDelete) {
+        for (Long imageId : imagesToDelete) {
+            Image image = imageRepository.findById(imageId)
+                    .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено."));
+            try {
+                deleteImage(image, announcement);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private boolean isNumeric(String str) {
+        if (str == null || str.isEmpty()) return false;
+        for (char c : str.toCharArray()) {
+            if (!Character.isDigit(c)) return false;
+        }
+        return true;
     }
 
     public void setPreviewImage(Announcement announcement, List<Image> savedImages) {

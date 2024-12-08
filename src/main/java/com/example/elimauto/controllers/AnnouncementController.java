@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -75,10 +75,9 @@ public class AnnouncementController {
 
     @PostMapping("/create")
     public ResponseEntity<String> createAnnouncement(
-            @ModelAttribute AnnouncementUpdateRequest updateRequest,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+            @ModelAttribute AnnouncementUpdateRequest updateRequest) {
         try {
-            announcementService.createAnnouncement(updateRequest, images);
+            announcementService.createAnnouncement(updateRequest, updateRequest.getNewImages());
             return ResponseEntity.status(HttpStatus.CREATED).body("Объявление создано успешно");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -87,7 +86,7 @@ public class AnnouncementController {
         }
     }
 
-    @PostMapping("/edit/{id}")
+    @PutMapping("/edit/{id}")
     public ResponseEntity<String> editAnnouncement(
             @PathVariable Long id,
             @ModelAttribute AnnouncementUpdateRequest updateRequest) {

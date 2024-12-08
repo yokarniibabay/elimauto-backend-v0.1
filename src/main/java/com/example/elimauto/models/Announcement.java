@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString(exclude = "images")
 public class Announcement {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -48,6 +50,7 @@ public class Announcement {
     @OrderBy("displayOrder ASC")
     private List<Image> images = new ArrayList<>();
 
+    @Column(name = "preview_image_id")
     private Long previewImageId;
 
     @Column(name = "created_at")
@@ -72,7 +75,12 @@ public class Announcement {
     }
 
     public void addImageToAnnouncement(Image image){
+        this.images.add(image);
         image.setAnnouncement(this);
-        images.add(image);
+    }
+
+    public void removeImage(Image image) {
+        images.remove(image);
+        image.setAnnouncement(null);
     }
 }

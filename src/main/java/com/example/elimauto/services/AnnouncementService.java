@@ -96,12 +96,12 @@ public class AnnouncementService {
 
     @Transactional
     public void createAnnouncement(AnnouncementUpdateRequest updateRequest,
-                                   List<MultipartFile> images) throws IOException {
+                                   List<MultipartFile> newImages) throws IOException {
         validateInputs(updateRequest.getTitle(),
                 updateRequest.getDescription(),
                 updateRequest.getPrice(),
                 updateRequest.getCity(),
-                images);
+                newImages);
 
         List<Image> savedImages = new ArrayList<>();
 
@@ -123,13 +123,22 @@ public class AnnouncementService {
 
             announcement.setStatus(AnnouncementStatus.PENDING);
 
+            // Первое сохранение объявления без изображений
             announcementRepository.save(announcement);
 
-            if (images != null && !images.isEmpty()) {
-                imageService.saveImages(images, announcement, savedImages);
-                if (announcement.getPreviewImageId() == null && !savedImages.isEmpty()) {
-                    announcement.setPreviewImageId(savedImages.get(0).getId());
-                }
+            if (newImages != null && !newImages.isEmpty()) {
+                // Добавляем новые изображения к announcement
+                imageService.saveImages(newImages, announcement, savedImages);
+                announcementRepository.saveAndFlush(announcement);
+            } else {
+                // Если нет изображений, достаточно одного сохранения
+                announcementRepository.save(announcement);
+            }
+
+            if (announcement.getPreviewImageId() == null && !announcement.getImages().isEmpty()) {
+                Image firstImage = announcement.getImages().get(0);
+                announcement.setPreviewImageId(firstImage.getId());
+                announcementRepository.save(announcement);
             }
 
             announcementRepository.save(announcement);
@@ -172,8 +181,13 @@ public class AnnouncementService {
         }
 
         // 1. Обработка удаления изображений
-        if (request.getImagesToDelete() != null && !request.getImagesToDelete().isEmpty()) {
-            deleteImages(announcement, request.getImagesToDelete());
+        List<Long> imagesToDelete = request.getImagesToDelete();
+        if (imagesToDelete != null && !imagesToDelete.isEmpty()) {
+            for (Long imageId : imagesToDelete) {
+                Image image = imageRepository.findById(imageId)
+                        .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено"));
+                announcement.removeImage(image);
+            }
         }
 
         log.info("Количество изображений после удаления: {}", announcement.getImages().size());
@@ -181,18 +195,20 @@ public class AnnouncementService {
         // 2. Обработка новых изображений
         Map<String, Image> tempIdToImageMap = new HashMap<>();
         if (request.getNewImages() != null && !request.getNewImages().isEmpty()) {
-            saveNewImages(announcement, request.getNewImages(), tempIdToImageMap);
+            // Этот метод сохранит файлы, создаст сущности Image, добавит их к announcement
+            // и заполнит tempIdToImageMap соответствиями tempId -> Image
+            imageService.saveNewImages(announcement, request.getNewImages(), tempIdToImageMap);
         }
 
         log.info("Добавлено новых изображений: {}", tempIdToImageMap.size());
 
         // 3. Обновление порядка изображений
-        updateImageOrder(announcement, request.getOrderedImageIds(), tempIdToImageMap);
+        imageService.updateImageOrder(announcement, request.getOrderedImageIds(), tempIdToImageMap);
 
         log.info("Порядок изображений обновлен.");
 
         // 4. Установка previewImageId
-        updatePreviewImage(announcement, request.getPreviewImageId(), tempIdToImageMap);
+        imageService.updatePreviewImage(announcement, request.getPreviewImageId(), tempIdToImageMap);
 
         // 5. Сохранение изменений
         announcementRepository.save(announcement);
@@ -269,17 +285,7 @@ public class AnnouncementService {
 
     // Вспомогательные методы
 
-    private boolean isNumeric(String str) {
-        if (str == null) {
-            return false;
-        }
-        try {
-            Long.parseLong(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
+
 
     private String generateTempId() {
         return "temp_" + UUID.randomUUID().toString();
@@ -291,90 +297,6 @@ public class AnnouncementService {
         if (request.getDescription() != null) announcement.setDescription(request.getDescription());
         if (request.getCity() != null) announcement.setCity(request.getCity());
         if (request.getPrice() != null) announcement.setPrice(request.getPrice());
-    }
-
-    private void saveNewImages(Announcement announcement,
-                               List<MultipartFile> newImages,
-                               Map<String, Image> tempIdToImageMap) throws IOException {
-        int tempCounter = 1;
-        for (MultipartFile file : newImages) {
-            String tempId = "temp_" + tempCounter++;
-            Image newImage = imageService.saveImage(file, announcement, false);
-            tempIdToImageMap.put(tempId, newImage);
-        }
-    }
-
-    private void updateImageOrder(Announcement announcement,
-                                  List<String> orderedImageIds,
-                                  Map<String, Image> tempIdToImageMap) {
-        List<Image> updatedImages = new ArrayList<>();
-        for (String id : orderedImageIds) {
-            Image image = isNumeric(id) ? imageRepository.findById(Long.parseLong(id))
-                    .orElseThrow(() -> new EntityNotFoundException("Image not found.")) :
-                    tempIdToImageMap.get(id);
-            updatedImages.add(image);
-        }
-        announcement.setImages(updatedImages);
-    }
-
-    private void updatePreviewImage(Announcement announcement,
-                                    String previewImageId,
-                                    Map<String, Image> tempIdToImageMap) {
-        if (previewImageId != null) {
-            Image previewImage;
-
-            if (isNumeric(previewImageId)) {
-                // Идентификатор существует в базе данных
-                Long previewId = Long.parseLong(previewImageId);
-                previewImage = imageRepository.findById(previewId)
-                        .orElseThrow(() ->
-                                new EntityNotFoundException("Изображение с ID " + previewId + " не найдено."));
-            } else {
-                // Идентификатор временный (для новых изображений)
-                previewImage = tempIdToImageMap.get(previewImageId);
-                if (previewImage == null) {
-                    throw new IllegalArgumentException("Некорректный идентификатор previewImage: " + previewImageId);
-                }
-            }
-
-            // Сбрасываем старое изображение, если оно было установлено как превью
-            if (announcement.getPreviewImageId() != null) {
-                Image oldPreviewImage = imageRepository.findById(announcement.getPreviewImageId())
-                        .orElseThrow(() ->
-                                new EntityNotFoundException("Изображение с ID "
-                                        + announcement.getPreviewImageId() + " не найдено."));
-                oldPreviewImage.setPreviewImage(false);
-                imageRepository.save(oldPreviewImage);
-            }
-
-            // Устанавливаем новое изображение как превью
-            previewImage.setPreviewImage(true);
-            imageRepository.save(previewImage);
-
-            // Обновляем поле previewImageId у объявления
-            announcement.setPreviewImageId(previewImage.getId());
-            log.info("previewImageId установлено на ID: {}", previewImage.getId());
-
-        } else if (!announcement.getImages().isEmpty()) {
-            // Если previewImageId не передан, ставим первое изображение как превью
-            Image firstImage = announcement.getImages().get(0);
-            firstImage.setPreviewImage(true);
-            imageRepository.save(firstImage);
-            announcement.setPreviewImageId(firstImage.getId());
-            log.info("previewImageId установлено на ID: {}", firstImage.getId());
-        }
-    }
-
-    private void deleteImages(Announcement announcement, List<Long> imagesToDelete) {
-        for (Long imageId : imagesToDelete) {
-            Image image = imageRepository.findById(imageId)
-                    .orElseThrow(() -> new EntityNotFoundException("Изображение с ID " + imageId + " не найдено."));
-            try {
-                imageService.deleteImage(image, announcement);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {
