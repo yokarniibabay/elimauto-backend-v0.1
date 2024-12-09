@@ -27,6 +27,11 @@ public class Announcement {
     @Column(name = "title")
     private String title;
 
+    private String makeId;
+    private String modelId;
+    private String generationId;
+    private Integer year;
+
     @Column(name = "description")
     private String description;
 

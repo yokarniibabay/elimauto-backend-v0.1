@@ -3,10 +3,7 @@ package com.example.elimauto.services;
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.DTO.ImageDTO;
 import com.example.elimauto.consts.AnnouncementStatus;
-import com.example.elimauto.models.Announcement;
-import com.example.elimauto.models.AnnouncementUpdateRequest;
-import com.example.elimauto.models.Image;
-import com.example.elimauto.models.User;
+import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.AnnouncementRepository;
 
 import com.example.elimauto.repositories.ImageRepository;
@@ -33,6 +30,7 @@ public class AnnouncementService {
     private final ImageService imageService;
     private final UserService userService;
     private final AccessService accessService;
+    private final CarReferenceService carReferenceService;
 
     public List<AnnouncementDTO> getAllAnnouncements() {
         return announcementRepository.findAll().stream()
@@ -97,7 +95,7 @@ public class AnnouncementService {
     @Transactional
     public void createAnnouncement(AnnouncementUpdateRequest updateRequest,
                                    List<MultipartFile> newImages) throws IOException {
-        validateInputs(updateRequest.getTitle(),
+        validateInputs(
                 updateRequest.getDescription(),
                 updateRequest.getPrice(),
                 updateRequest.getCity(),
@@ -106,10 +104,14 @@ public class AnnouncementService {
         List<Image> savedImages = new ArrayList<>();
 
         Announcement announcement = new Announcement();
-        announcement.setTitle(updateRequest.getTitle());
         announcement.setDescription(updateRequest.getDescription());
         announcement.setPrice(updateRequest.getPrice());
         announcement.setCity(updateRequest.getCity());
+        announcement.setYear(updateRequest.getYear());
+
+        announcement.setMakeId(updateRequest.getMakeId());
+        announcement.setModelId(updateRequest.getModelId());
+        announcement.setGenerationId(updateRequest.getGenerationId());
 
         try {
             User currentUser = userService.getCurrentUser();
@@ -124,6 +126,14 @@ public class AnnouncementService {
             announcement.setStatus(AnnouncementStatus.PENDING);
 
             // Первое сохранение объявления без изображений
+            announcementRepository.save(announcement);
+
+            // Генерируем title
+            Mark mark = carReferenceService.getMarkById(updateRequest.getMakeId());
+            Model model = carReferenceService.getModelById(updateRequest.getModelId());
+            String generatedTitle = mark.getName() + " " + model.getName() + ", " + updateRequest.getYear() + "г.";
+            announcement.setTitle(generatedTitle);
+
             announcementRepository.save(announcement);
 
             if (newImages != null && !newImages.isEmpty()) {
@@ -169,7 +179,7 @@ public class AnnouncementService {
 
         // Обновление статуса объявления
         boolean priceChanged = request.getPrice() != null && !announcement.getPrice().equals(request.getPrice());
-        boolean otherFieldsChanged = request.getTitle() != null || request.getDescription() != null || request.getCity() != null;
+        boolean otherFieldsChanged = request.getDescription() != null || request.getCity() != null;
 
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
             if (!(priceChanged && !otherFieldsChanged)) {
@@ -178,6 +188,13 @@ public class AnnouncementService {
         } else if (announcement.getStatus() == AnnouncementStatus.REJECTED) {
             announcement.setStatus(AnnouncementStatus.PENDING);
             announcement.setRejectedAt(null);
+        }
+
+        if (request.getMakeId() != null || request.getModelId() != null || request.getYear() != null) {
+            Mark mark = carReferenceService.getMarkById(announcement.getMakeId());
+            Model model = carReferenceService.getModelById(announcement.getModelId());
+            String newTitle = mark.getName() + " " + model.getName() + ", " + announcement.getYear() + "г.";
+            announcement.setTitle(newTitle);
         }
 
         // 1. Обработка удаления изображений
@@ -195,8 +212,6 @@ public class AnnouncementService {
         // 2. Обработка новых изображений
         Map<String, Image> tempIdToImageMap = new HashMap<>();
         if (request.getNewImages() != null && !request.getNewImages().isEmpty()) {
-            // Этот метод сохранит файлы, создаст сущности Image, добавит их к announcement
-            // и заполнит tempIdToImageMap соответствиями tempId -> Image
             imageService.saveNewImages(announcement, request.getNewImages(), tempIdToImageMap);
         }
 
@@ -265,14 +280,11 @@ public class AnnouncementService {
         log.info("Deleted announcement with ID: {}", id);
     }
 
-    private void validateInputs(String title, String description, double price, String city, List<MultipartFile> files) {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Название объявления не может быть пустым.");
-        }
+    private void validateInputs(String description, Double price, String city, List<MultipartFile> files) {
         if (description == null || description.isBlank()) {
             throw new IllegalArgumentException("Описание не может быть пустым.");
         }
-        if (price <= 0) {
+        if (price == null || price <= 0) {
             throw new IllegalArgumentException("Цена должна быть положительной.");
         }
         if (city == null || city.isBlank()) {
@@ -285,18 +297,20 @@ public class AnnouncementService {
 
     // Вспомогательные методы
 
-
-
     private String generateTempId() {
         return "temp_" + UUID.randomUUID().toString();
     }
 
     private void updateAnnouncementFields(Announcement announcement,
                                           AnnouncementUpdateRequest request) {
-        if (request.getTitle() != null) announcement.setTitle(request.getTitle());
         if (request.getDescription() != null) announcement.setDescription(request.getDescription());
-        if (request.getCity() != null) announcement.setCity(request.getCity());
         if (request.getPrice() != null) announcement.setPrice(request.getPrice());
+        if (request.getCity() != null) announcement.setCity(request.getCity());
+
+        if (request.getYear() != null) announcement.setYear(request.getYear());
+        if (request.getMakeId() != null) announcement.setMakeId(request.getMakeId());
+        if (request.getModelId() != null) announcement.setModelId(request.getModelId());
+        if (request.getGenerationId() != null) announcement.setGenerationId(request.getGenerationId());
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {
@@ -327,6 +341,18 @@ public class AnnouncementService {
         dto.setViews(announcement.getViews());
         dto.setStatus(announcement.getStatus());
         dto.setStatusComment(announcement.getStatusComment());
+
+        if (announcement.getMakeId() != null) {
+            Mark mark = carReferenceService.getMarkById(announcement.getMakeId());
+            dto.setMakeName(mark.getName());
+        }
+        if (announcement.getModelId() != null) {
+            Model model = carReferenceService.getModelById(announcement.getModelId());
+            dto.setModelName(model.getName());
+        }
+        if (announcement.getYear() != null) {
+            dto.setYear(announcement.getYear());
+        }
 
         return dto;
     }

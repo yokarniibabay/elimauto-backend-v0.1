@@ -21,4 +21,8 @@ public class AnnouncementDTO {
     private Long views;
     private AnnouncementStatus status;
     private String statusComment;
+
+    private String makeName;
+    private String modelName;
+    private Integer year;
 }
