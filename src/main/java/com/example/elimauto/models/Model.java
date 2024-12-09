@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "model", schema = "carbase")
+@Table(name = "model", catalog = "carbase")
 public class Model {
     @Id
     @Column(name = "id")

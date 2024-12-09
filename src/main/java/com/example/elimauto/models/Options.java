@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "options", schema = "carbase")
+@Table(name = "options", catalog = "carbase")
 public class Options {
     @Id
     @Column(name = "complectation_id")

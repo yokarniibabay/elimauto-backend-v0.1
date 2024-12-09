@@ -19,8 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -54,6 +52,7 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .requestMatchers("/announcement/allApproved").permitAll()
                         .requestMatchers(HttpMethod.GET, "/announcement/public/**").permitAll()
                         .requestMatchers("/api/image/**").permitAll()
+                        .requestMatchers("/api/cars/**").permitAll()
                         // Требуют аутентификации
                         .requestMatchers(HttpMethod.GET, "/announcement/private/**").authenticated()
                         .requestMatchers("/announcement/create").authenticated()
