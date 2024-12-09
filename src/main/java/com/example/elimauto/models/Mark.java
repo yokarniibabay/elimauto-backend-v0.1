@@ -1,5 +1,6 @@
 package com.example.elimauto.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,5 +28,6 @@ public class Mark {
     private String country;
 
     @OneToMany(mappedBy = "mark", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Model> models = new ArrayList<>();
 }

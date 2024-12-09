@@ -1,5 +1,7 @@
 package com.example.elimauto.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -31,8 +33,10 @@ public class Generation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="model_id", referencedColumnName="id", insertable=false, updatable=false)
+    @JsonBackReference
     private Model model;
 
     @OneToMany(mappedBy = "generation", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Configuration> configurations = new ArrayList<>();
 }

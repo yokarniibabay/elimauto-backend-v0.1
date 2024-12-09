@@ -1,5 +1,6 @@
 package com.example.elimauto.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,6 +26,7 @@ public class Modification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="configuration_id", referencedColumnName="id", insertable=false, updatable=false)
+    @JsonBackReference
     private Configuration configuration;
 
     // Связь 1:1 с Specifications и Options
