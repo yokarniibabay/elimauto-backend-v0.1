@@ -2,6 +2,8 @@ package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
 import com.example.elimauto.DTO.ImageDTO;
+import com.example.elimauto.DTO.MarkDTO;
+import com.example.elimauto.DTO.ModelDetailDTO;
 import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.AnnouncementRepository;
@@ -129,9 +131,12 @@ public class AnnouncementService {
             announcementRepository.save(announcement);
 
             // Генерируем title
-            Mark mark = carReferenceService.getMarkById(updateRequest.getMakeId());
-            Model model = carReferenceService.getModelById(updateRequest.getModelId());
-            String generatedTitle = mark.getName() + " " + model.getName() + ", " + updateRequest.getYear() + "г.";
+            MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
+            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(updateRequest.getModelId());
+
+            String generatedTitle = markDTO.getName() + " "
+                    + modelDetailDTO.getName() + ", "
+                    + updateRequest.getYear() + "г.";
             announcement.setTitle(generatedTitle);
 
             announcementRepository.save(announcement);
@@ -191,9 +196,11 @@ public class AnnouncementService {
         }
 
         if (request.getMakeId() != null || request.getModelId() != null || request.getYear() != null) {
-            Mark mark = carReferenceService.getMarkById(announcement.getMakeId());
-            Model model = carReferenceService.getModelById(announcement.getModelId());
-            String newTitle = mark.getName() + " " + model.getName() + ", " + announcement.getYear() + "г.";
+            MarkDTO markDTO = carReferenceService.getMarkDTOById(announcement.getMakeId());
+            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(announcement.getModelId());
+            String newTitle = markDTO.getName() + " "
+                    + modelDetailDTO.getName() + ", "
+                    + announcement.getYear() + "г.";
             announcement.setTitle(newTitle);
         }
 
@@ -343,12 +350,12 @@ public class AnnouncementService {
         dto.setStatusComment(announcement.getStatusComment());
 
         if (announcement.getMakeId() != null) {
-            Mark mark = carReferenceService.getMarkById(announcement.getMakeId());
-            dto.setMakeName(mark.getName());
+            MarkDTO markDTO = carReferenceService.getMarkDTOById(announcement.getMakeId());
+            dto.setMakeName(markDTO.getName());
         }
         if (announcement.getModelId() != null) {
-            Model model = carReferenceService.getModelById(announcement.getModelId());
-            dto.setModelName(model.getName());
+            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(announcement.getModelId());
+            dto.setModelName(modelDetailDTO.getName());
         }
         if (announcement.getYear() != null) {
             dto.setYear(announcement.getYear());

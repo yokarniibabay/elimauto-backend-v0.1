@@ -1,5 +1,8 @@
 package com.example.elimauto.services;
 
+import com.example.elimauto.DTO.MarkDTO;
+import com.example.elimauto.DTO.ModelDTO;
+import com.example.elimauto.DTO.ModelDetailDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,11 +40,17 @@ public class CarReferenceService {
 
     //MARKS
 
-    public List<Mark> getAllMarks() {
-        return markRepository.findAll();
+    public List<MarkDTO> getAllMarks() {
+        List<Mark> marks = markRepository.findAllByOrderByNameAsc();
+        return marks.stream().map(this::convertToMarkDTO).collect(Collectors.toList());
     }
 
-    public Mark getMarkById(String markId) {
+    public MarkDTO getMarkDTOById(String markId) {
+        Mark mark = getMarkById(markId);
+        return convertToMarkDTO(mark);
+    }
+
+    private Mark getMarkById(String markId) {
         return markRepository.findById(markId)
                 .orElseThrow(() -> new EntityNotFoundException("Марка с ID " + markId + " не найдена."));
     }
@@ -49,15 +58,25 @@ public class CarReferenceService {
 
     //MODELS
 
-    public List<Model> getModelsByMark(String markId) {
-        return modelRepository.findAll().stream()
-                .filter(m -> m.getMark().toString().equals(markId))
-                .collect(Collectors.toList());
+    public List<ModelDTO> getModelsByMark(String markId) {
+        List<Model> models = modelRepository.findByMarkIdOrderByNameAsc(markId);
+        return models.stream().map(this::convertToModelDTO).collect(Collectors.toList());
     }
 
-    public Model getModelById(String modelId) {
-        return modelRepository.findById(modelId)
+    public ModelDetailDTO getModelDetailById(String modelId) {
+        Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new EntityNotFoundException("Модель с ID " + modelId + " не найдена."));
+        Mark mark = getMarkById(model.getMark().getId());
+
+        return new ModelDetailDTO(
+                model.getId(),
+                model.getName(),
+                model.getCyrillicName(),
+                model.getCarClass(),
+                model.getYearFrom(),
+                model.getYearTo(),
+                mark.getName()
+        );
     }
 
 
@@ -93,5 +112,33 @@ public class CarReferenceService {
 
     public Options getOptionsByComplectation(String complectationId) {
         return optionsRepository.findById(complectationId).orElse(null);
+    }
+
+
+    //ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    private MarkDTO convertToMarkDTO(Mark mark) {
+        List<ModelDTO> modelDTOs = mark.getModels().stream()
+                .map(this::convertToModelDTO)
+                .collect(Collectors.toList());
+
+        return new MarkDTO(
+                mark.getId(),
+                mark.getName(),
+                mark.getCyrillicName(),
+                mark.isPopular(),
+                mark.getCountry(),
+                modelDTOs
+        );
+    }
+
+    private ModelDTO convertToModelDTO(Model model) {
+        return new ModelDTO(
+                model.getId(),
+                model.getName(),
+                model.getCyrillicName(),
+                model.getCarClass(),
+                model.getYearFrom(),
+                model.getYearTo()
+        );
     }
 }

@@ -1,5 +1,7 @@
 package com.example.elimauto.controllers;
 
+import com.example.elimauto.DTO.MarkDTO;
+import com.example.elimauto.DTO.ModelDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.services.CarReferenceService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,12 +21,12 @@ public class CarController {
     }
 
     @GetMapping("/makes")
-    public List<Mark> getMakes() {
+    public List<MarkDTO> getMakes() {
         return carReferenceService.getAllMarks();
     }
 
     @GetMapping("/models")
-    public List<Model> getModels(@RequestParam String markId) {
+    public List<ModelDTO> getModels(@RequestParam String markId) {
         return carReferenceService.getModelsByMark(markId);
     }
 

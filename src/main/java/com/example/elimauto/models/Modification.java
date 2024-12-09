@@ -1,6 +1,7 @@
 package com.example.elimauto.models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -31,8 +32,10 @@ public class Modification {
 
     // Связь 1:1 с Specifications и Options
     @OneToOne(mappedBy = "modification", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Specifications specifications;
 
     @OneToOne(mappedBy = "modification", fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Options options;
 }

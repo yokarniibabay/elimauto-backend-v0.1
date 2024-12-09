@@ -1,5 +1,6 @@
 package com.example.elimauto.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -169,5 +170,6 @@ public class Specifications {
 
     @OneToOne
     @JoinColumn(name="complectation_id", referencedColumnName="complectation_id", insertable=false, updatable=false)
+    @JsonBackReference
     private Modification modification;
 }
