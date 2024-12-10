@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface MarkRepository extends JpaRepository<Mark, String> {
     List<Mark> findAllByOrderByNameAsc();
+    List<Mark> findAllByOrderByPopularDescNameAsc();
 }

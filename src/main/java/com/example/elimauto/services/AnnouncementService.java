@@ -1,9 +1,6 @@
 package com.example.elimauto.services;
 
-import com.example.elimauto.DTO.AnnouncementDTO;
-import com.example.elimauto.DTO.ImageDTO;
-import com.example.elimauto.DTO.MarkDTO;
-import com.example.elimauto.DTO.ModelDetailDTO;
+import com.example.elimauto.DTO.*;
 import com.example.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.AnnouncementRepository;
@@ -132,10 +129,10 @@ public class AnnouncementService {
 
             // Генерируем title
             MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
-            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(updateRequest.getModelId());
+            ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
 
             String generatedTitle = markDTO.getName() + " "
-                    + modelDetailDTO.getName() + ", "
+                    + modelDTO.getName() + ", "
                     + updateRequest.getYear() + "г.";
             announcement.setTitle(generatedTitle);
 
@@ -197,9 +194,9 @@ public class AnnouncementService {
 
         if (request.getMakeId() != null || request.getModelId() != null || request.getYear() != null) {
             MarkDTO markDTO = carReferenceService.getMarkDTOById(announcement.getMakeId());
-            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(announcement.getModelId());
+            ModelDTO modelDTO = carReferenceService.getModelById(announcement.getModelId());
             String newTitle = markDTO.getName() + " "
-                    + modelDetailDTO.getName() + ", "
+                    + modelDTO.getName() + ", "
                     + announcement.getYear() + "г.";
             announcement.setTitle(newTitle);
         }
@@ -354,8 +351,8 @@ public class AnnouncementService {
             dto.setMakeName(markDTO.getName());
         }
         if (announcement.getModelId() != null) {
-            ModelDetailDTO modelDetailDTO = carReferenceService.getModelDetailById(announcement.getModelId());
-            dto.setModelName(modelDetailDTO.getName());
+            ModelDTO modelDTO = carReferenceService.getModelById(announcement.getModelId());
+            dto.setModelName(modelDTO.getName());
         }
         if (announcement.getYear() != null) {
             dto.setYear(announcement.getYear());

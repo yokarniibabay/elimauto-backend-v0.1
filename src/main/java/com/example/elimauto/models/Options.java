@@ -132,7 +132,7 @@ public class Options {
     @Column(name="360-camera")
     private Integer threeSixtyCamera;
 
-    @Column(name="adj-pedal")
+    @Column(name="adj-pedals")
     private Integer adjPedals;
 
     @Column(name="ashtray-and-cigarette-lighter")
@@ -267,7 +267,7 @@ public class Options {
     @Column(name="led-lights")
     private Integer ledLights;
 
-    @Column(name="lights-cleaner")
+    @Column(name="light-cleaner")
     private Integer lightCleaner;
 
     @Column(name="light-sensor")
@@ -330,7 +330,7 @@ public class Options {
     @Column(name="esp")
     private Integer esp;
 
-    @Column(name="feedback-alard")
+    @Column(name="feedback-alarm")
     private Integer feedbackAlarm;
 
     @Column(name="glonass")
@@ -488,6 +488,15 @@ public class Options {
 
     @Column(name="steel-wheels")
     private Integer steelWheels;
+
+    @Column(name = "adj-pedal")
+    private Integer adjPedal;
+
+    @Column(name = "feedback-alard")
+    private Integer feedbackAlard;
+
+    @Column(name = "lights-cleaner")
+    private Integer lightsCleaner;
 
     @OneToOne
     @JoinColumn(name="complectation_id", referencedColumnName="complectation_id", insertable=false, updatable=false)

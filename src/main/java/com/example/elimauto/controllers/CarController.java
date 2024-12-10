@@ -1,9 +1,10 @@
 package com.example.elimauto.controllers;
 
-import com.example.elimauto.DTO.MarkDTO;
+import com.example.elimauto.DTO.MarkNameDTO;
 import com.example.elimauto.DTO.ModelDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.services.CarReferenceService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,13 +21,17 @@ public class CarController {
         this.carReferenceService = carReferenceService;
     }
 
-    @GetMapping("/makes")
-    public List<MarkDTO> getMakes() {
-        return carReferenceService.getAllMarks();
+    @GetMapping("/makes-popular")
+    public ResponseEntity<List<MarkNameDTO>> getMakesOrderedByPopular() {
+        List<MarkNameDTO> popularMarks = carReferenceService.getAllMarksOrderedByPopular();
+        if (popularMarks.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(popularMarks);
     }
 
-    @GetMapping("/models")
-    public List<ModelDTO> getModels(@RequestParam String markId) {
+    @GetMapping("/makes/{markId}/models")
+    public List<ModelDTO> getModelsByMark(@RequestParam String markId) {
         return carReferenceService.getModelsByMark(markId);
     }
 

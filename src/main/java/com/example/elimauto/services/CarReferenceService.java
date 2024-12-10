@@ -1,11 +1,13 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.MarkDTO;
+import com.example.elimauto.DTO.MarkNameDTO;
 import com.example.elimauto.DTO.ModelDTO;
-import com.example.elimauto.DTO.ModelDetailDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.*;
 import jakarta.persistence.EntityNotFoundException;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +22,9 @@ public class CarReferenceService {
     private final ModificationRepository modificationRepository;
     private final SpecificationsRepository specificationsRepository;
     private final OptionsRepository optionsRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     public CarReferenceService(MarkRepository markRepository,
                                ModelRepository modelRepository,
@@ -45,6 +50,13 @@ public class CarReferenceService {
         return marks.stream().map(this::convertToMarkDTO).collect(Collectors.toList());
     }
 
+    public List<MarkNameDTO> getAllMarksOrderedByPopular() {
+        List<Mark> marks = markRepository.findAllByOrderByPopularDescNameAsc();
+        return marks.stream()
+                .map(mark -> modelMapper.map(mark, MarkNameDTO.class))
+                .collect(Collectors.toList());
+    }
+
     public MarkDTO getMarkDTOById(String markId) {
         Mark mark = getMarkById(markId);
         return convertToMarkDTO(mark);
@@ -63,19 +75,18 @@ public class CarReferenceService {
         return models.stream().map(this::convertToModelDTO).collect(Collectors.toList());
     }
 
-    public ModelDetailDTO getModelDetailById(String modelId) {
+    public ModelDTO getModelById(String modelId) {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new EntityNotFoundException("Модель с ID " + modelId + " не найдена."));
         Mark mark = getMarkById(model.getMark().getId());
 
-        return new ModelDetailDTO(
+        return new ModelDTO(
                 model.getId(),
                 model.getName(),
                 model.getCyrillicName(),
                 model.getCarClass(),
                 model.getYearFrom(),
-                model.getYearTo(),
-                mark.getName()
+                model.getYearTo()
         );
     }
 

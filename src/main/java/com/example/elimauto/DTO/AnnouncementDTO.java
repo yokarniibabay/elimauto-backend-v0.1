@@ -1,13 +1,11 @@
 package com.example.elimauto.DTO;
 
 import com.example.elimauto.consts.AnnouncementStatus;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class AnnouncementDTO {
     private Long id;
     private String title;
