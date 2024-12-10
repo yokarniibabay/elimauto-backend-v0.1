@@ -3,6 +3,7 @@ package com.example.elimauto.services;
 import com.example.elimauto.DTO.MarkDTO;
 import com.example.elimauto.DTO.MarkNameDTO;
 import com.example.elimauto.DTO.ModelDTO;
+import com.example.elimauto.DTO.ModelNameDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -70,9 +71,11 @@ public class CarReferenceService {
 
     //MODELS
 
-    public List<ModelDTO> getModelsByMark(String markId) {
+    public List<ModelNameDTO> getModelsByMark(String markId) {
         List<Model> models = modelRepository.findByMarkIdOrderByNameAsc(markId);
-        return models.stream().map(this::convertToModelDTO).collect(Collectors.toList());
+        return models.stream()
+                .map(model -> modelMapper.map(model, ModelNameDTO.class))
+                .collect(Collectors.toList());
     }
 
     public ModelDTO getModelById(String modelId) {

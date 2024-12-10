@@ -2,6 +2,7 @@ package com.example.elimauto.controllers;
 
 import com.example.elimauto.DTO.MarkNameDTO;
 import com.example.elimauto.DTO.ModelDTO;
+import com.example.elimauto.DTO.ModelNameDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.services.CarReferenceService;
 import org.springframework.http.ResponseEntity;
@@ -28,8 +29,8 @@ public class CarController {
     }
 
     @GetMapping("/makes/{markId}/models")
-    public ResponseEntity<List<ModelDTO>> getModelsByMark(@PathVariable String markId) {
-        List<ModelDTO> modelsByMark = carReferenceService.getModelsByMark(markId);
+    public ResponseEntity<List<ModelNameDTO>> getModelsByMark(@PathVariable String markId) {
+        List<ModelNameDTO> modelsByMark = carReferenceService.getModelsByMark(markId);
         if (modelsByMark.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
