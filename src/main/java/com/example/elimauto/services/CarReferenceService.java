@@ -1,9 +1,6 @@
 package com.example.elimauto.services;
 
-import com.example.elimauto.DTO.MarkDTO;
-import com.example.elimauto.DTO.MarkNameDTO;
-import com.example.elimauto.DTO.ModelDTO;
-import com.example.elimauto.DTO.ModelNameDTO;
+import com.example.elimauto.DTO.*;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -96,9 +93,10 @@ public class CarReferenceService {
 
     //GENERATIONS
 
-    public List<Generation> getGenerationsByModel(String modelId) {
-        return generationRepository.findAll().stream()
-                .filter(g -> g.getModelId().equals(modelId))
+    public List<GenerationDTO> getGenerationsByModel(String modelId) {
+        List<Generation> generations = generationRepository.findByModelIdOrderByYearStart(modelId);
+        return generations.stream()
+                .map(generation -> modelMapper.map(generation, GenerationDTO.class))
                 .collect(Collectors.toList());
     }
 

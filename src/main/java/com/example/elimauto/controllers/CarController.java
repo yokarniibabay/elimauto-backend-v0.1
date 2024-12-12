@@ -1,7 +1,7 @@
 package com.example.elimauto.controllers;
 
+import com.example.elimauto.DTO.GenerationDTO;
 import com.example.elimauto.DTO.MarkNameDTO;
-import com.example.elimauto.DTO.ModelDTO;
 import com.example.elimauto.DTO.ModelNameDTO;
 import com.example.elimauto.models.*;
 import com.example.elimauto.services.CarReferenceService;
@@ -37,9 +37,13 @@ public class CarController {
         return ResponseEntity.ok(modelsByMark);
     }
 
-    @GetMapping("/generations")
-    public List<Generation> getGenerations(@PathVariable String modelId) {
-        return carReferenceService.getGenerationsByModel(modelId);
+    @GetMapping("makes/{markId}/models/{modelId}/generations")
+    public ResponseEntity<List<GenerationDTO>> getGenerations(@PathVariable String modelId) {
+        List<GenerationDTO> generationsByModel = carReferenceService.getGenerationsByModel(modelId);
+        if (generationsByModel.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(generationsByModel);
     }
 
     @GetMapping("/configurations")
