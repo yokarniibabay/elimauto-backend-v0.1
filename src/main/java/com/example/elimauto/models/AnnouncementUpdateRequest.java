@@ -11,6 +11,7 @@ public class AnnouncementUpdateRequest {
     private String makeId;
     private String modelId;
     private String generationId;
+    private String configurationId;
     private Integer year; // год выпуска
     private String description;
     private Double price;

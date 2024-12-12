@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SpecificationsRepository extends JpaRepository<Specifications, String> {
+    Specifications findByComplectationId(String complectationId);
 }

@@ -10,7 +10,7 @@ import lombok.Data;
 @Table(name = "modification", catalog = "carbase")
 public class Modification {
     @Id
-    @Column(name = "complectation_id")
+    @Column(name = "complectation-id")
     private String complectationId;
 
     @Column(name = "offers-price-from")

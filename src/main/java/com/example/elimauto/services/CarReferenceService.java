@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,9 +44,11 @@ public class CarReferenceService {
 
     //MARKS
 
-    public List<MarkDTO> getAllMarks() {
+    public List<MarkNameDTO> getAllMarksOrderedByNameAsc() {
         List<Mark> marks = markRepository.findAllByOrderByNameAsc();
-        return marks.stream().map(this::convertToMarkDTO).collect(Collectors.toList());
+        return marks.stream()
+                .map(mark -> modelMapper.map(mark, MarkNameDTO.class))
+                .collect(Collectors.toList());
     }
 
     public List<MarkNameDTO> getAllMarksOrderedByPopular() {
@@ -57,7 +60,7 @@ public class CarReferenceService {
 
     public MarkDTO getMarkDTOById(String markId) {
         Mark mark = getMarkById(markId);
-        return convertToMarkDTO(mark);
+        return modelMapper.map(mark, MarkDTO.class);
     }
 
     private Mark getMarkById(String markId) {
@@ -80,14 +83,7 @@ public class CarReferenceService {
                 .orElseThrow(() -> new EntityNotFoundException("Модель с ID " + modelId + " не найдена."));
         Mark mark = getMarkById(model.getMark().getId());
 
-        return new ModelDTO(
-                model.getId(),
-                model.getName(),
-                model.getCyrillicName(),
-                model.getCarClass(),
-                model.getYearFrom(),
-                model.getYearTo()
-        );
+        return modelMapper.map(model, ModelDTO.class);
     }
 
 
@@ -100,13 +96,18 @@ public class CarReferenceService {
                 .collect(Collectors.toList());
     }
 
+    public GenerationDTO getGenerationDTOById(String generationId) {
+        Generation generation = generationRepository.findById(generationId)
+                .orElseThrow(() -> new NoSuchElementException("Generation not found with ID: " + generationId));
+        return modelMapper.map(generation, GenerationDTO.class);
+    }
 
     //CONFIGURATIONS
 
     public List<ConfigurationDTO> getConfigurationsByGeneration(String generationId) {
         List<Configuration> configurations = configurationRepository.findByGenerationIdOrderByDoorsCount(generationId);
         return configurations.stream()
-                .map(configuration -> modelMapper.map(configurations, ConfigurationDTO.class))
+                .map(configuration -> modelMapper.map(configuration, ConfigurationDTO.class))
                 .collect(Collectors.toList());
     }
 
@@ -119,9 +120,25 @@ public class CarReferenceService {
                 .collect(Collectors.toList());
     }
 
+    public ModificationDTO getModificationDTOByConfigurationId(String configurationId) {
+        Modification modification = modificationRepository.findByConfigurationId(configurationId);
+        return modelMapper.map(modification, ModificationDTO.class);
+    }
+
+
+    //SPECIFICATIONS
+
     public Specifications getSpecificationsByComplectation(String complectationId) {
         return specificationsRepository.findById(complectationId).orElse(null);
     }
+
+    public SpecificationsEngineDetailsDTO getSpecificationsEngineDetailsDTO(String complectationId) {
+        Specifications specifications = specificationsRepository.findByComplectationId(complectationId);
+        return modelMapper.map(specifications, SpecificationsEngineDetailsDTO.class);
+    }
+
+
+    //OPTIONS
 
     public Options getOptionsByComplectation(String complectationId) {
         return optionsRepository.findById(complectationId).orElse(null);
@@ -129,29 +146,5 @@ public class CarReferenceService {
 
 
     //ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
-    private MarkDTO convertToMarkDTO(Mark mark) {
-        List<ModelDTO> modelDTOs = mark.getModels().stream()
-                .map(this::convertToModelDTO)
-                .collect(Collectors.toList());
 
-        return new MarkDTO(
-                mark.getId(),
-                mark.getName(),
-                mark.getCyrillicName(),
-                mark.isPopular(),
-                mark.getCountry(),
-                modelDTOs
-        );
-    }
-
-    private ModelDTO convertToModelDTO(Model model) {
-        return new ModelDTO(
-                model.getId(),
-                model.getName(),
-                model.getCyrillicName(),
-                model.getCarClass(),
-                model.getYearFrom(),
-                model.getYearTo()
-        );
-    }
 }

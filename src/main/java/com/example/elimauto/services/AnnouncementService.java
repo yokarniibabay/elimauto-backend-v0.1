@@ -132,21 +132,16 @@ public class AnnouncementService {
             // Генерируем title
             MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
             ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
+            GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(updateRequest.getGenerationId());
 
-            // Проверяем наличие комплектации
-            String groupName = extractGroupName(updateRequest.getGenerationId());
-            String generatedTitle;
-
-            if (groupName != null && !groupName.isBlank()) {
-                generatedTitle = markDTO.getName() + " "
-                        + modelDTO.getName() + " "
-                        + groupName + ", "
-                        + updateRequest.getYear() + "г.";
-            } else {
-                generatedTitle = markDTO.getName() + " "
-                        + modelDTO.getName() + ", "
-                        + updateRequest.getYear() + "г.";
+            String groupName = null;
+            if (updateRequest.getConfigurationId() != null) {
+                groupName = extractGroupName(updateRequest.getConfigurationId());
             }
+
+            String generatedTitle = generateTitle(markDTO.getName(), modelDTO.getName(),
+                    generationDTO.isRestyle(), groupName,
+                    updateRequest.getYear());
 
             announcement.setTitle(generatedTitle);
 
@@ -315,41 +310,34 @@ public class AnnouncementService {
 
     // Вспомогательные методы
 
+    private String generateTitle(String markName, String modelName, boolean isRestyle,
+                                 String groupName, int year) {
+        StringBuilder titleBuilder = new StringBuilder();
+        titleBuilder.append(markName).append(" ").append(modelName);
+
+        if (isRestyle) {
+            titleBuilder.append(" Рестайлинг");
+        }
+
+        if (groupName != null && !groupName.isEmpty()) {
+            titleBuilder.append(" ").append(groupName);
+        }
+
+        titleBuilder.append(", ").append(year).append("г.");
+        return titleBuilder.toString();
+    }
+
     private String generateTempId() {
         return "temp_" + UUID.randomUUID().toString();
     }
 
-    public String extractGroupName(String complectationId) {
-        if (complectationId == null || complectationId.isBlank()) {
+    private String extractGroupName(String configurationId) {
+        if (configurationId == null || configurationId.isEmpty()) {
             return null;
         }
-
-        // Разделяем ID на части (X_Y_Z)
-        String[] parts = complectationId.split("_");
-
-        if (parts.length < 3) {
-            log.warn("Некорректный формат complectationId: {}", complectationId);
-            return null;
-        }
-
-        String configurationId = parts[0];
-        String complectationPart = parts[1]; // Y
-        String characteristicsId = parts[2];
-
-        // Проверяем, есть ли Y (id комплектации)
-        if (complectationPart == null || complectationPart.isBlank()) {
-            log.info("Комплектация отсутствует для complectationId: {}", complectationId);
-            return null; // Если Y отсутствует, возвращаем null
-        }
-
-        // Извлекаем комплектацию из базы
-        Modification modification = modificationRepository.findByComplectationId(complectationId);
-        if (modification != null) {
-            return modification.getGroupName(); // Возвращаем название комплектации
-        }
-
-        log.info("Комплектация не найдена для complectationId: {}", complectationId);
-        return null;
+        ModificationDTO modificationDTO =
+                carReferenceService.getModificationDTOByConfigurationId(configurationId);
+        return modificationDTO != null ? modificationDTO.getGroupName() : null;
     }
 
     private void updateAnnouncementFields(Announcement announcement,
