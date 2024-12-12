@@ -21,6 +21,7 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     List<Announcement> findByAuthorIdAndStatus(Long authorId, AnnouncementStatus status);
     List<Announcement> findByStatus(AnnouncementStatus status);
     List<Announcement> findAllByStatusAndRejectedAtBefore(AnnouncementStatus status, LocalDateTime dateTime);
+    List<Announcement> findAllByOrderByCreatedAtDesc();
 
 
     @Modifying

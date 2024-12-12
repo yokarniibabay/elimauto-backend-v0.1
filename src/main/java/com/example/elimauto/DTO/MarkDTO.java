@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class MarkDTO {
     private String id;
     private String name;

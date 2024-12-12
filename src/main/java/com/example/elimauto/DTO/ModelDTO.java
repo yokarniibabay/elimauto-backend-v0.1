@@ -4,6 +4,7 @@ import lombok.*;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class ModelDTO {
     private String id;
     private String name;

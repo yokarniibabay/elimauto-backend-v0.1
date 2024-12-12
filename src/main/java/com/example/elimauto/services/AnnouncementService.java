@@ -40,7 +40,7 @@ public class AnnouncementService {
     }
 
     public List<AnnouncementDTO> getAllApprovedAnnouncements() {
-        return announcementRepository.findAll().stream()
+        return announcementRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -109,10 +109,15 @@ public class AnnouncementService {
         announcement.setPrice(updateRequest.getPrice());
         announcement.setCity(updateRequest.getCity());
         announcement.setYear(updateRequest.getYear());
+        announcement.setColor(updateRequest.getColor());
+        announcement.setDrivetrain(updateRequest.getDrivetrain());
+        announcement.setEngineCapacity(updateRequest.getEngineCapacity());
+        announcement.setTransmissionType(updateRequest.getTransmissionType());
 
         announcement.setMakeId(updateRequest.getMakeId());
         announcement.setModelId(updateRequest.getModelId());
         announcement.setGenerationId(updateRequest.getGenerationId());
+        announcement.setConfigurationId(updateRequest.getConfigurationId());
 
         try {
             User currentUser = userService.getCurrentUser();
@@ -126,10 +131,8 @@ public class AnnouncementService {
 
             announcement.setStatus(AnnouncementStatus.PENDING);
 
-            // Первое сохранение объявления без изображений
             announcementRepository.save(announcement);
 
-            // Генерируем title
             MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
             ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
             GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(updateRequest.getGenerationId());
@@ -148,11 +151,9 @@ public class AnnouncementService {
             announcementRepository.save(announcement);
 
             if (newImages != null && !newImages.isEmpty()) {
-                // Добавляем новые изображения к announcement
                 imageService.saveImages(newImages, announcement, savedImages);
                 announcementRepository.saveAndFlush(announcement);
             } else {
-                // Если нет изображений, достаточно одного сохранения
                 announcementRepository.save(announcement);
             }
 
@@ -183,12 +184,10 @@ public class AnnouncementService {
             throw new AccessDeniedException("Недостаточно прав для редактирования данного объявления.");
         }
 
-        // Обновление основных полей
         updateAnnouncementFields(announcement, request);
 
         log.info("Пользователь с ID {} редактирует объявление с ID {}", currentUser.getId(), announcement.getId());
 
-        // Обновление статуса объявления
         boolean priceChanged = request.getPrice() != null && !announcement.getPrice().equals(request.getPrice());
         boolean otherFieldsChanged = request.getDescription() != null || request.getCity() != null;
 
@@ -210,7 +209,6 @@ public class AnnouncementService {
             announcement.setTitle(newTitle);
         }
 
-        // 1. Обработка удаления изображений
         List<Long> imagesToDelete = request.getImagesToDelete();
         if (imagesToDelete != null && !imagesToDelete.isEmpty()) {
             for (Long imageId : imagesToDelete) {
@@ -311,20 +309,22 @@ public class AnnouncementService {
     // Вспомогательные методы
 
     private String generateTitle(String markName, String modelName, boolean isRestyle,
-                                 String groupName, int year) {
-        StringBuilder titleBuilder = new StringBuilder();
-        titleBuilder.append(markName).append(" ").append(modelName);
+                                 String groupName, Integer year) {
+        StringBuilder title = new StringBuilder();
 
+        title.append(markName).append(" ");
+        title.append(modelName).append(" ");
         if (isRestyle) {
-            titleBuilder.append(" Рестайлинг");
+            title.append("Рестайлинг ");
+        }
+        if (groupName != null) {
+            title.append(groupName).append(" ");
+        }
+        if (year != null) {
+            title.append(year).append(" г.");
         }
 
-        if (groupName != null && !groupName.isEmpty()) {
-            titleBuilder.append(" ").append(groupName);
-        }
-
-        titleBuilder.append(", ").append(year).append("г.");
-        return titleBuilder.toString();
+        return title.toString().trim();
     }
 
     private String generateTempId() {
@@ -350,6 +350,8 @@ public class AnnouncementService {
         if (request.getMakeId() != null) announcement.setMakeId(request.getMakeId());
         if (request.getModelId() != null) announcement.setModelId(request.getModelId());
         if (request.getGenerationId() != null) announcement.setGenerationId(request.getGenerationId());
+        if (request.getConfigurationId() != null) announcement.setConfigurationId(request.getConfigurationId());
+        if (request.getDrivetrain()!= null) announcement.setDrivetrain(request.getDrivetrain());
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {

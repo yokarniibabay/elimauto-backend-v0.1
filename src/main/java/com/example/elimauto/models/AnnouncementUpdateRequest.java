@@ -12,7 +12,11 @@ public class AnnouncementUpdateRequest {
     private String modelId;
     private String generationId;
     private String configurationId;
-    private Integer year; // год выпуска
+    private Integer year;
+    private String color;
+    private Integer drivetrain;
+    private float engineCapacity;
+    private String transmissionType;
     private String description;
     private Double price;
     private String city;

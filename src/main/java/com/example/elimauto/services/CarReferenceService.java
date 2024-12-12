@@ -112,6 +112,7 @@ public class CarReferenceService {
     }
 
 
+
     //MODIFICATIONS
 
     public List<Modification> getModificationsByConfiguration(String configurationId) {
@@ -121,8 +122,7 @@ public class CarReferenceService {
     }
 
     public ModificationDTO getModificationDTOByConfigurationId(String configurationId) {
-        Modification modification = modificationRepository.findByConfigurationId(configurationId);
-        return modelMapper.map(modification, ModificationDTO.class);
+        return modificationRepository.findByConfigurationId(configurationId);
     }
 
 

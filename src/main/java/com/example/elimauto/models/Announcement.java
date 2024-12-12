@@ -30,7 +30,12 @@ public class Announcement {
     private String makeId;
     private String modelId;
     private String generationId;
+    private String configurationId;
     private Integer year;
+    private String color;
+    private Integer drivetrain;
+    private float engineCapacity;
+    private String transmissionType;
 
     @Column(name = "description")
     private String description;

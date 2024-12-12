@@ -66,6 +66,20 @@ public class CarController {
                 return ResponseEntity.notFound().build();
             }
             return ResponseEntity.ok(modificationDTO);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{configurationId}/modificationDetails")
+    public ResponseEntity<String> getModificationId(@PathVariable String configurationId) {
+        try {
+            String modificationDetails =
+                    carReferenceService.getModificationDTOByConfigurationId(configurationId).getComplectationId();
+            if (modificationDetails == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(modificationDetails);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

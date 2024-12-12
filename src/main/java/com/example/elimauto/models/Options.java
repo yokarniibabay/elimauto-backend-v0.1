@@ -499,7 +499,6 @@ public class Options {
     private Integer lightsCleaner;
 
     @OneToOne
-    @JoinColumn(name="complectation_id", referencedColumnName="complectation_id", insertable=false, updatable=false)
-    @JsonBackReference
+    @JoinColumn(name="complectation_id", referencedColumnName="complectation-id", insertable=false, updatable=false)
     private Modification modification;
 }

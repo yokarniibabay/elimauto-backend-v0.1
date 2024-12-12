@@ -169,7 +169,6 @@ public class Specifications {
     private String safetyGrade;
 
     @OneToOne
-    @JoinColumn(name="complectation_id", referencedColumnName="complectation_id", insertable=false, updatable=false)
-    @JsonBackReference
+    @JoinColumn(name="complectation-id", referencedColumnName="complectation-id", insertable=false, updatable=false)
     private Modification modification;
 }
