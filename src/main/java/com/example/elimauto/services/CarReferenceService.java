@@ -103,9 +103,10 @@ public class CarReferenceService {
 
     //CONFIGURATIONS
 
-    public List<Configuration> getConfigurationsByGeneration(String generationId) {
-        return configurationRepository.findAll().stream()
-                .filter(c -> c.getGenerationId().equals(generationId))
+    public List<ConfigurationDTO> getConfigurationsByGeneration(String generationId) {
+        List<Configuration> configurations = configurationRepository.findByGenerationIdOrderByDoorsCount(generationId);
+        return configurations.stream()
+                .map(configuration -> modelMapper.map(configurations, ConfigurationDTO.class))
                 .collect(Collectors.toList());
     }
 

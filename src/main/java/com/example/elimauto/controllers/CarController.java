@@ -1,5 +1,6 @@
 package com.example.elimauto.controllers;
 
+import com.example.elimauto.DTO.ConfigurationDTO;
 import com.example.elimauto.DTO.GenerationDTO;
 import com.example.elimauto.DTO.MarkNameDTO;
 import com.example.elimauto.DTO.ModelNameDTO;
@@ -37,7 +38,7 @@ public class CarController {
         return ResponseEntity.ok(modelsByMark);
     }
 
-    @GetMapping("makes/{markId}/models/{modelId}/generations")
+    @GetMapping("/{modelId}/generations")
     public ResponseEntity<List<GenerationDTO>> getGenerations(@PathVariable String modelId) {
         List<GenerationDTO> generationsByModel = carReferenceService.getGenerationsByModel(modelId);
         if (generationsByModel.isEmpty()) {
@@ -46,9 +47,14 @@ public class CarController {
         return ResponseEntity.ok(generationsByModel);
     }
 
-    @GetMapping("/configurations")
-    public List<Configuration> getConfigurations(@PathVariable String generationId) {
-        return carReferenceService.getConfigurationsByGeneration(generationId);
+    @GetMapping("/{generationId}/configurations")
+    public ResponseEntity<List<ConfigurationDTO>> getConfigurations(@PathVariable String generationId) {
+        List<ConfigurationDTO> configurationDTOSByGeneration =
+                carReferenceService.getConfigurationsByGeneration(generationId);
+        if(configurationDTOSByGeneration.isEmpty()) {
+            return  ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(configurationDTOSByGeneration);
     }
 
     @GetMapping("/modifications")

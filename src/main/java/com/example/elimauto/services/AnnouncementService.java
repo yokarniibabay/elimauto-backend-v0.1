@@ -6,6 +6,7 @@ import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.AnnouncementRepository;
 
 import com.example.elimauto.repositories.ImageRepository;
+import com.example.elimauto.repositories.ModificationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
+    private final ModificationRepository modificationRepository;
     private final ImageRepository imageRepository;
     private final ImageService imageService;
     private final UserService userService;
@@ -131,9 +133,21 @@ public class AnnouncementService {
             MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
             ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
 
-            String generatedTitle = markDTO.getName() + " "
-                    + modelDTO.getName() + ", "
-                    + updateRequest.getYear() + "г.";
+            // Проверяем наличие комплектации
+            String groupName = extractGroupName(updateRequest.getGenerationId());
+            String generatedTitle;
+
+            if (groupName != null && !groupName.isBlank()) {
+                generatedTitle = markDTO.getName() + " "
+                        + modelDTO.getName() + " "
+                        + groupName + ", "
+                        + updateRequest.getYear() + "г.";
+            } else {
+                generatedTitle = markDTO.getName() + " "
+                        + modelDTO.getName() + ", "
+                        + updateRequest.getYear() + "г.";
+            }
+
             announcement.setTitle(generatedTitle);
 
             announcementRepository.save(announcement);
@@ -303,6 +317,39 @@ public class AnnouncementService {
 
     private String generateTempId() {
         return "temp_" + UUID.randomUUID().toString();
+    }
+
+    public String extractGroupName(String complectationId) {
+        if (complectationId == null || complectationId.isBlank()) {
+            return null;
+        }
+
+        // Разделяем ID на части (X_Y_Z)
+        String[] parts = complectationId.split("_");
+
+        if (parts.length < 3) {
+            log.warn("Некорректный формат complectationId: {}", complectationId);
+            return null;
+        }
+
+        String configurationId = parts[0];
+        String complectationPart = parts[1]; // Y
+        String characteristicsId = parts[2];
+
+        // Проверяем, есть ли Y (id комплектации)
+        if (complectationPart == null || complectationPart.isBlank()) {
+            log.info("Комплектация отсутствует для complectationId: {}", complectationId);
+            return null; // Если Y отсутствует, возвращаем null
+        }
+
+        // Извлекаем комплектацию из базы
+        Modification modification = modificationRepository.findByComplectationId(complectationId);
+        if (modification != null) {
+            return modification.getGroupName(); // Возвращаем название комплектации
+        }
+
+        log.info("Комплектация не найдена для complectationId: {}", complectationId);
+        return null;
     }
 
     private void updateAnnouncementFields(Announcement announcement,
