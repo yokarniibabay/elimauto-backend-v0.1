@@ -141,6 +141,20 @@ public class CarController {
         return ResponseEntity.ok(specification);
     }
 
+    /**
+     * Валидация выбранных параметров.
+     */
+
+    @GetMapping("/{configurationId}/{volumeLitres}/{transmission}/{drive}/{horsePower}/validate-modification")
+    public ResponseEntity<Void> validateModification(@PathVariable String configurationId,
+                                                        @PathVariable String volumeLitres,
+                                                        @PathVariable String transmission,
+                                                        @PathVariable String drive,
+                                                        @PathVariable String horsePower) {
+        specificationService.validateModification(configurationId, volumeLitres, transmission, drive, horsePower);
+        return ResponseEntity.ok().build();
+    }
+
 
     @GetMapping("/options")
     public Options getOptions(@PathVariable String complectationId) {

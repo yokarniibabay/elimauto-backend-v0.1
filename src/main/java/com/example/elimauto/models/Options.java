@@ -1,6 +1,5 @@
 package com.example.elimauto.models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,490 +12,490 @@ public class Options {
     private String complectationId;
 
     @Column(name="alcantara")
-    private Integer alcantara;
+    private String alcantara;
 
     @Column(name="black-roof")
-    private Integer blackRoof;
+    private String blackRoof;
 
     @Column(name="combo-interior")
-    private Integer comboInterior;
+    private String comboInterior;
 
     @Column(name="decorative-interior-lighting")
-    private Integer decorativeInteriorLighting;
+    private String decorativeInteriorLighting;
 
     @Column(name="door-sill-panel")
-    private Integer doorSillPanel;
+    private String doorSillPanel;
 
     @Column(name="driver-seat-electric")
-    private Integer driverSeatElectric;
+    private String driverSeatElectric;
 
     @Column(name="driver-seat-memory")
-    private Integer driverSeatMemory;
+    private String driverSeatMemory;
 
     @Column(name="driver-seat-support")
-    private Integer driverSeatSupport;
+    private String driverSeatSupport;
 
     @Column(name="driver-seat-updown")
-    private Integer driverSeatUpDown;
+    private String driverSeatUpDown;
 
     @Column(name="eco-leather")
-    private Integer ecoLeather;
+    private String ecoLeather;
 
     @Column(name="electro-rear-seat")
-    private Integer electroRearSeat;
+    private String electroRearSeat;
 
     @Column(name="fabric-seats")
-    private Integer fabricSeats;
+    private String fabricSeats;
 
     @Column(name="folding-front-passenger-seat")
-    private Integer foldingFrontPassengerSeat;
+    private String foldingFrontPassengerSeat;
 
     @Column(name="folding-tables-rear")
-    private Integer foldingTablesRear;
+    private String foldingTablesRear;
 
     @Column(name="front-centre-armrest")
-    private Integer frontCentreArmrest;
+    private String frontCentreArmrest;
 
     @Column(name="front-seat-support")
-    private Integer frontSeatSupport;
+    private String frontSeatSupport;
 
     @Column(name="front-seats-heat")
-    private Integer frontSeatsHeat;
+    private String frontSeatsHeat;
 
     @Column(name="front-seats-heat-vent")
-    private Integer frontSeatsHeatVent;
+    private String frontSeatsHeatVent;
 
     @Column(name="hatch")
-    private Integer hatch;
+    private String hatch;
 
     @Column(name="leather")
-    private Integer leather;
+    private String leather;
 
     @Column(name="leather-gear-stick")
-    private Integer leatherGearStick;
+    private String leatherGearStick;
 
     @Column(name="massage-seats")
-    private Integer massageSeats;
+    private String massageSeats;
 
     @Column(name="panorama-roof")
-    private Integer panoramaRoof;
+    private String panoramaRoof;
 
     @Column(name="passenger-seat-electric")
-    private Integer passengerSeatElectric;
+    private String passengerSeatElectric;
 
     @Column(name="passenger-seat-updown")
-    private Integer passengerSeatUpDown;
+    private String passengerSeatUpDown;
 
     @Column(name="rear-seat-heat-vent")
-    private Integer rearSeatHeatVent;
+    private String rearSeatHeatVent;
 
     @Column(name="rear-seat-memory")
-    private Integer rearSeatMemory;
+    private String rearSeatMemory;
 
     @Column(name="rear-seats-heat")
-    private Integer rearSeatsHeat;
+    private String rearSeatsHeat;
 
     @Column(name="roller-blind-for-rear-window")
-    private Integer rollerBlindForRearWindow;
+    private String rollerBlindForRearWindow;
 
     @Column(name="roller-blinds-for-rear-side-windows")
-    private Integer rollerBlindsForRearSideWindows;
+    private String rollerBlindsForRearSideWindows;
 
     @Column(name="seat-memory")
-    private Integer seatMemory;
+    private String seatMemory;
 
     @Column(name="seat-transformation")
-    private Integer seatTransformation;
+    private String seatTransformation;
 
     @Column(name="sport-pedals")
-    private Integer sportPedals;
+    private String sportPedals;
 
     @Column(name="sport-seats")
-    private Integer sportSeats;
+    private String sportSeats;
 
     @Column(name="third-rear-headrest")
-    private Integer thirdRearHeadrest;
+    private String thirdRearHeadrest;
 
     @Column(name="third-row-seats")
-    private Integer thirdRowSeats;
+    private String thirdRowSeats;
 
     @Column(name="tinted-glass")
-    private Integer tintedGlass;
+    private String tintedGlass;
 
     @Column(name="wheel-heat")
-    private Integer wheelHeat;
+    private String wheelHeat;
 
     @Column(name="wheel-leather")
-    private Integer wheelLeather;
+    private String wheelLeather;
 
     @Column(name="360-camera")
-    private Integer threeSixtyCamera;
+    private String threeSixtyCamera;
 
     @Column(name="adj-pedals")
-    private Integer adjPedals;
+    private String adjPedals;
 
     @Column(name="ashtray-and-cigarette-lighter")
-    private Integer ashtrayAndCigaretteLighter;
+    private String ashtrayAndCigaretteLighter;
 
     @Column(name="auto-cruise")
-    private Integer autoCruise;
+    private String autoCruise;
 
     @Column(name="auto-mirrors")
-    private Integer autoMirrors;
+    private String autoMirrors;
 
     @Column(name="auto-park")
-    private Integer autoPark;
+    private String autoPark;
 
     @Column(name="climate-control-1")
-    private Integer climateControlOne;
+    private String climateControlOne;
 
     @Column(name="climate-control-2")
-    private Integer climateControlTwo;
+    private String climateControlTwo;
 
     @Column(name="computer")
-    private Integer computer;
+    private String computer;
 
     @Column(name="condition")
-    private Integer condition;
+    private String condition;
 
     @Column(name="cooling-box")
-    private Integer coolingBox;
+    private String coolingBox;
 
     @Column(name="cruise-control")
-    private Integer cruiseControl;
+    private String cruiseControl;
 
     @Column(name="drive-mode-sys")
-    private Integer driveModeSys;
+    private String driveModeSys;
 
     @Column(name="e-adjustment-wheel")
-    private Integer eAdjustmentWheel;
+    private String eAdjustmentWheel;
 
     @Column(name="easy-trunk-opening")
-    private Integer easyTrunkOpening;
+    private String easyTrunkOpening;
 
     @Column(name="electro-mirrors")
-    private Integer electroMirrors;
+    private String electroMirrors;
 
     @Column(name="electro-trunk")
-    private Integer electroTrunk;
+    private String electroTrunk;
 
     @Column(name="electro-window-back")
-    private Integer electroWindowBack;
+    private String electroWindowBack;
 
     @Column(name="electro-window-front")
-    private Integer electroWindowFront;
+    private String electroWindowFront;
 
     @Column(name="electronic-gage-panel")
-    private Integer electronicGagePanel;
+    private String electronicGagePanel;
 
     @Column(name="front-camera")
-    private Integer frontCamera;
+    private String frontCamera;
 
     @Column(name="keyless-entry")
-    private Integer keylessEntry;
+    private String keylessEntry;
 
     @Column(name="multi-wheel")
-    private Integer multiWheel;
+    private String multiWheel;
 
     @Column(name="multizone-climate-control")
-    private Integer multizoneClimateControl;
+    private String multizoneClimateControl;
 
     @Column(name="park-assist-f")
-    private Integer parkAssistF;
+    private String parkAssistF;
 
     @Column(name="park-assist-r")
-    private Integer parkAssistR;
+    private String parkAssistR;
 
     @Column(name="power-latching-doors")
-    private Integer powerLatchingDoors;
+    private String powerLatchingDoors;
 
     @Column(name="programmed-block-heater")
-    private Integer programmedBlockHeater;
+    private String programmedBlockHeater;
 
     @Column(name="projection-display")
-    private Integer projectionDisplay;
+    private String projectionDisplay;
 
     @Column(name="rear-camera")
-    private Integer rearCamera;
+    private String rearCamera;
 
     @Column(name="remote-engine-start")
-    private Integer remoteEngineStart;
+    private String remoteEngineStart;
 
     @Column(name="servo")
-    private Integer servo;
+    private String servo;
 
     @Column(name="start-button")
-    private Integer startButton;
+    private String startButton;
 
     @Column(name="start-stop-function")
-    private Integer startStopFunction;
+    private String startStopFunction;
 
     @Column(name="steering-wheel-gear-shift-paddles")
-    private Integer steeringWheelGearShiftPaddles;
+    private String steeringWheelGearShiftPaddles;
 
     @Column(name="wheel-configuration1")
-    private Integer wheelConfigurationOne;
+    private String wheelConfigurationOne;
 
     @Column(name="wheel-configuration2")
-    private Integer wheelConfigurationTwo;
+    private String wheelConfigurationTwo;
 
     @Column(name="wheel-memory")
-    private Integer wheelMemory;
+    private String wheelMemory;
 
     @Column(name="wheel-power")
-    private Integer wheelPower;
+    private String wheelPower;
 
     @Column(name="adaptive-light")
-    private Integer adaptiveLight;
+    private String adaptiveLight;
 
     @Column(name="automatic-lighting-control")
-    private Integer automaticLightingControl;
+    private String automaticLightingControl;
 
     @Column(name="drl")
-    private Integer drl;
+    private String drl;
 
     @Column(name="heated-wash-system")
-    private Integer heatedWashSystem;
+    private String heatedWashSystem;
 
     @Column(name="high-beam-assist")
-    private Integer highBeamAssist;
+    private String highBeamAssist;
 
     @Column(name="laser-lights")
-    private Integer laserLights;
+    private String laserLights;
 
     @Column(name="led-lights")
-    private Integer ledLights;
+    private String ledLights;
 
     @Column(name="light-cleaner")
-    private Integer lightCleaner;
+    private String lightCleaner;
 
     @Column(name="light-sensor")
-    private Integer lightSensor;
+    private String lightSensor;
 
     @Column(name="mirrors-heat")
-    private Integer mirrorsHeat;
+    private String mirrorsHeat;
 
     @Column(name="ptf")
-    private Integer ptf;
+    private String ptf;
 
     @Column(name="rain-sensor")
-    private Integer rainSensor;
+    private String rainSensor;
 
     @Column(name="windcleaner-heat")
-    private Integer windcleanerHeat;
+    private String windcleanerHeat;
 
     @Column(name="windscreen-heat")
-    private Integer windscreenHeat;
+    private String windscreenHeat;
 
     @Column(name="xenon")
-    private Integer xenon;
+    private String xenon;
 
     @Column(name="abs")
-    private Integer abs;
+    private String abs;
 
     @Column(name="airbag-curtain")
-    private Integer airbagCurtain;
+    private String airbagCurtain;
 
     @Column(name="airbag-driver")
-    private Integer airbagDriver;
+    private String airbagDriver;
 
     @Column(name="airbag-passenger")
-    private Integer airbagPassenger;
+    private String airbagPassenger;
 
     @Column(name="airbag-rear-side")
-    private Integer airbagRearSide;
+    private String airbagRearSide;
 
     @Column(name="airbag-side")
-    private Integer airbagSide;
+    private String airbagSide;
 
     @Column(name="asr")
-    private Integer asr;
+    private String asr;
 
     @Column(name="bas")
-    private Integer bas;
+    private String bas;
 
     @Column(name="blind-spot")
-    private Integer blindSpot;
+    private String blindSpot;
 
     @Column(name="collision-prevention-assist")
-    private Integer collisionPreventionAssist;
+    private String collisionPreventionAssist;
 
     @Column(name="dha")
-    private Integer dha;
+    private String dha;
 
     @Column(name="drowsy-driver-alert-system")
-    private Integer drowsyDriverAlertSystem;
+    private String drowsyDriverAlertSystem;
 
     @Column(name="esp")
-    private Integer esp;
+    private String esp;
 
     @Column(name="feedback-alarm")
-    private Integer feedbackAlarm;
+    private String feedbackAlarm;
 
     @Column(name="glonass")
-    private Integer glonass;
+    private String glonass;
 
     @Column(name="hcc")
-    private Integer hcc;
+    private String hcc;
 
     @Column(name="isofix")
-    private Integer isofix;
+    private String isofix;
 
     @Column(name="isofix-front")
-    private Integer isofixFront;
+    private String isofixFront;
 
     @Column(name="knee-airbag")
-    private Integer kneeAirbag;
+    private String kneeAirbag;
 
     @Column(name="laminated-safety-glass")
-    private Integer laminatedSafetyGlass;
+    private String laminatedSafetyGlass;
 
     @Column(name="lane-keeping-assist")
-    private Integer laneKeepingAssist;
+    private String laneKeepingAssist;
 
     @Column(name="night-vision")
-    private Integer nightVision;
+    private String nightVision;
 
     @Column(name="power-child-locks-rear-doors")
-    private Integer powerChildLocksRearDoors;
+    private String powerChildLocksRearDoors;
 
     @Column(name="traffic-sign-recognition")
-    private Integer trafficSignRecognition;
+    private String trafficSignRecognition;
 
     @Column(name="tyre-pressure")
-    private Integer tyrePressure;
+    private String tyrePressure;
 
     @Column(name="vsm")
-    private Integer vsm;
+    private String vsm;
 
     @Column(name="alarm")
-    private Integer alarm;
+    private String alarm;
 
     @Column(name="immo")
-    private Integer immo;
+    private String immo;
 
     @Column(name="lock")
-    private Integer lock;
+    private String lock;
 
     @Column(name="volume-sensor")
-    private Integer volumeSensor;
+    private String volumeSensor;
 
     @Column(name="12v-socket")
-    private Integer twelveVSocket;
+    private String twelveVSocket;
 
     @Column(name="220v-socket")
-    private Integer twoTwentyVSocket;
+    private String twoTwentyVSocket;
 
     @Column(name="android-auto")
-    private Integer androidAuto;
+    private String androidAuto;
 
     @Column(name="apple-carplay")
-    private Integer appleCarplay;
+    private String appleCarplay;
 
     @Column(name="audiopreparation")
-    private Integer audioPreparation;
+    private String audioPreparation;
 
     @Column(name="audiosystem-cd")
-    private Integer audioSystemCD;
+    private String audioSystemCD;
 
     @Column(name="audiosystem-tv")
-    private Integer audioSystemTV;
+    private String audioSystemTV;
 
     @Column(name="aux")
-    private Integer aux;
+    private String aux;
 
     @Column(name="bluetooth")
-    private Integer bluetooth;
+    private String bluetooth;
 
     @Column(name="entertainment-system-for-rear-seat-passengers")
-    private Integer entertainmentSystemForRearSeatPassengers;
+    private String entertainmentSystemForRearSeatPassengers;
 
     @Column(name="music-super")
-    private Integer musicSuper;
+    private String musicSuper;
 
     @Column(name="navigation")
-    private Integer navigation;
+    private String navigation;
 
     @Column(name="usb")
-    private Integer usb;
+    private String usb;
 
     @Column(name="voice-recognition")
-    private Integer voiceRecognition;
+    private String voiceRecognition;
 
     @Column(name="wireless-charger")
-    private Integer wirelessCharger;
+    private String wirelessCharger;
 
     @Column(name="ya-auto")
-    private Integer yaAuto;
+    private String yaAuto;
 
     @Column(name="activ-suspension")
-    private Integer activSuspension;
+    private String activSuspension;
 
     @Column(name="air-suspension")
-    private Integer airSuspension;
+    private String airSuspension;
 
     @Column(name="reduce-spare-wheel")
-    private Integer reduceSpareWheel;
+    private String reduceSpareWheel;
 
     @Column(name="spare-wheel")
-    private Integer spareWheel;
+    private String spareWheel;
 
     @Column(name="sport-suspension")
-    private Integer sportSuspension;
+    private String sportSuspension;
 
     @Column(name="14-inch-wheels")
-    private Integer fourteenInchWheels;
+    private String fourteenInchWheels;
 
     @Column(name="15-inch-wheels")
-    private Integer fifteenInchWheels;
+    private String fifteenInchWheels;
 
     @Column(name="16-inch-wheels")
-    private Integer sixteenInchWheels;
+    private String sixteenInchWheels;
 
     @Column(name="17-inch-wheels")
-    private Integer seventeenInchWheels;
+    private String seventeenInchWheels;
 
     @Column(name="18-inch-wheels")
-    private Integer eighteenInchWheels;
+    private String eighteenInchWheels;
 
     @Column(name="19-inch-wheels")
-    private Integer nineteenInchWheels;
+    private String nineteenInchWheels;
 
     @Column(name="20-inch-wheels")
-    private Integer twentyInchWheels;
+    private String twentyInchWheels;
 
     @Column(name="21-inch-wheels")
-    private Integer twentyOneInchWheels;
+    private String twentyOneInchWheels;
 
     @Column(name="22-inch-wheels")
-    private Integer twentyTwoInchWheels;
+    private String twentyTwoInchWheels;
 
     @Column(name="body-kit")
-    private Integer bodyKit;
+    private String bodyKit;
 
     @Column(name="body-mouldings")
-    private Integer bodyMouldings;
+    private String bodyMouldings;
 
     @Column(name="duo-body-color")
-    private Integer duoBodyColor;
+    private String duoBodyColor;
 
     @Column(name="paint-metallic")
-    private Integer paintMetallic;
+    private String paintMetallic;
 
     @Column(name="roof-rails")
-    private Integer roofRails;
+    private String roofRails;
 
     @Column(name="steel-wheels")
-    private Integer steelWheels;
+    private String steelWheels;
 
     @Column(name = "adj-pedal")
-    private Integer adjPedal;
+    private String adjPedal;
 
     @Column(name = "feedback-alard")
-    private Integer feedbackAlard;
+    private String feedbackAlard;
 
     @Column(name = "lights-cleaner")
-    private Integer lightsCleaner;
+    private String lightsCleaner;
 
     @OneToOne
     @JoinColumn(name="complectation_id", referencedColumnName="complectation-id", insertable=false, updatable=false)

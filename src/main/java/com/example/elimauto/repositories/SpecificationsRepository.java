@@ -56,4 +56,20 @@ public interface SpecificationsRepository extends JpaRepository<Specifications, 
                                             @Param("transmission") String transmission,
                                             @Param("drive") String drive,
                                             @Param("horsePower") String horsePower);
+
+    // Поиск "С указанием марки, и минимальным значением объема двигателя, от"
+    @Query("SELECT DISTINCT s.volumeLitres " +
+            "FROM Specifications s " +
+            "JOIN s.modification m " +
+            "WHERE (:markId IS NULL OR m.configuration.generation.model.mark.id = :markId) " +
+            "AND (:modelId IS NULL OR m.configuration.generation.model.id = :modelId) " +
+            "AND (:generationId IS NULL OR m.configuration.generation.id = :generationId) " +
+            "AND (:minVolumeLitres IS NULL OR CAST(s.volumeLitres AS double) >= :minVolumeLitres) " +
+            "ORDER BY CAST(s.volumeLitres AS double) ASC")
+    List<String> findDistinctEngineVolumesWithFilter(
+            @Param("markId") String markId,
+            @Param("modelId") String modelId,
+            @Param("generationId") String generationId,
+            @Param("minVolumeLitres") Double minVolumeLitres
+    );
 }

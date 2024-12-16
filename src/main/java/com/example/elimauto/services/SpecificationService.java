@@ -82,4 +82,20 @@ public class SpecificationService {
 
         throw new IllegalStateException("Не удалось определить уникальную модификацию");
     }
+
+    public void  validateModification(String configurationId,
+                                       String volumeLitres,
+                                       String transmission,
+                                       String drive,
+                                       String horsePower) {
+        List<String> complectationIds = modificationRepository.findComplectationIdsByConfigurationId(configurationId);
+
+        List<Specifications> specifications = specificationsRepository.findSpecifications(
+                complectationIds, volumeLitres, transmission, drive, horsePower
+        );
+
+        if (specifications.isEmpty()) {
+            throw new IllegalArgumentException("Модификация с такими параметрами не найдена.");
+        }
+    }
 }

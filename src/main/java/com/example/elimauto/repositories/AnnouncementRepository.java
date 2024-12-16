@@ -28,4 +28,30 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     @Transactional
     @Query("UPDATE Announcement a SET a.views = a.views + 1 WHERE a.id = :id")
     void incrementViews(@Param("id") Long id);
+
+
+    //Поиск
+    @Query("SELECT a FROM Announcement a " +
+            "WHERE (:markId IS NULL OR a.makeId = :markId) " +
+            "AND (:modelId IS NULL OR a.modelId = :modelId) " +
+            "AND (:generationId IS NULL OR a.generationId = :generationId) " +
+            "AND (:minVolume IS NULL OR a.engineCapacity >= :minVolume) " +
+            "AND (:maxVolume IS NULL OR a.engineCapacity <= :maxVolume) " +
+            "AND (:minYear IS NULL OR a.year >= :minYear) " +
+            "AND (:maxYear IS NULL OR a.year <= :maxYear) " +
+            "AND (:minMileage IS NULL OR a.mileage >= :minMileage) " +
+            "AND (:maxMileage IS NULL OR a.mileage <= :maxMileage) " +
+            "AND (:minPrice IS NULL OR a.price >= :minPrice) " +
+            "AND (:maxPrice IS NULL OR a.price <= :maxPrice)")
+    List<Announcement> searchAnnouncements(@Param("markId") String markId,
+                                           @Param("modelId") String modelId,
+                                           @Param("generationId") String generationId,
+                                           @Param("minVolume") Double minVolume,
+                                           @Param("maxVolume") Double maxVolume,
+                                           @Param("minYear") Integer minYear,
+                                           @Param("maxYear") Integer maxYear,
+                                           @Param("minMileage") Integer minMileage,
+                                           @Param("maxMileage") Integer maxMileage,
+                                           @Param("minPrice") Double minPrice,
+                                           @Param("maxPrice") Double maxPrice);
 }

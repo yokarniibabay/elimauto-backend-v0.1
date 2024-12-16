@@ -103,8 +103,8 @@ public class AnnouncementService {
                 newImages);
 
         List<Image> savedImages = new ArrayList<>();
-
         Announcement announcement = new Announcement();
+
         announcement.setDescription(updateRequest.getDescription());
         announcement.setPrice(updateRequest.getPrice());
         announcement.setCity(updateRequest.getCity());
@@ -119,7 +119,15 @@ public class AnnouncementService {
         announcement.setMakeId(updateRequest.getMakeId());
         announcement.setModelId(updateRequest.getModelId());
         announcement.setGenerationId(updateRequest.getGenerationId());
+        announcement.setBodyType(updateRequest.getBodyType());
         announcement.setConfigurationId(updateRequest.getConfigurationId());
+
+        MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
+        ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
+        GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(updateRequest.getGenerationId());
+
+        announcement.setMakeName(markDTO.getName());
+        announcement.setModelName(modelDTO.getName());
 
         try {
             User currentUser = userService.getCurrentUser();
@@ -129,15 +137,10 @@ public class AnnouncementService {
 
             announcement.setAuthor(currentUser);
             announcement.setAuthorName(currentUser.getName());
-            log.info("Текущий пользователь: {}", announcement.getAuthor());
 
             announcement.setStatus(AnnouncementStatus.PENDING);
 
             announcementRepository.save(announcement);
-
-            MarkDTO markDTO = carReferenceService.getMarkDTOById(updateRequest.getMakeId());
-            ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
-            GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(updateRequest.getGenerationId());
 
             String groupName = "";
 //            if (updateRequest.getConfigurationId() != null) {
@@ -164,7 +167,7 @@ public class AnnouncementService {
                 announcement.setPreviewImageId(firstImage.getId());
                 announcementRepository.save(announcement);
             }
-
+            announcement.setUpdatedAt(LocalDateTime.now());
             announcementRepository.save(announcement);
             log.info("Создано объявление с ID: {}", announcement.getId());
 
@@ -239,6 +242,7 @@ public class AnnouncementService {
         imageService.updatePreviewImage(announcement, request.getPreviewImageId(), tempIdToImageMap);
 
         // 5. Сохранение изменений
+        announcement.setUpdatedAt(LocalDateTime.now());
         announcementRepository.save(announcement);
         log.info("Объявление с ID {} обновлено успешно.", announcement.getId());
     }
@@ -259,6 +263,7 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление с ID " + id + " не найдено."));
         announcement.setStatus(status);
+        announcement.setUpdatedAt(LocalDateTime.now());
         announcementRepository.save(announcement);
     }
 
@@ -274,6 +279,7 @@ public class AnnouncementService {
         announcement.setStatus(AnnouncementStatus.REJECTED);
         announcement.setStatusComment(comment);
         announcement.setRejectedAt(LocalDateTime.now());
+        announcement.setUpdatedAt(LocalDateTime.now());
         announcementRepository.save(announcement);
     }
 
@@ -347,13 +353,34 @@ public class AnnouncementService {
         if (request.getDescription() != null) announcement.setDescription(request.getDescription());
         if (request.getPrice() != null) announcement.setPrice(request.getPrice());
         if (request.getCity() != null) announcement.setCity(request.getCity());
-
         if (request.getYear() != null) announcement.setYear(request.getYear());
-        if (request.getMakeId() != null) announcement.setMakeId(request.getMakeId());
-        if (request.getModelId() != null) announcement.setModelId(request.getModelId());
-        if (request.getGenerationId() != null) announcement.setGenerationId(request.getGenerationId());
-        if (request.getConfigurationId() != null) announcement.setConfigurationId(request.getConfigurationId());
-        if (request.getDriveType()!= null) announcement.setDriveType(request.getDriveType());
+        if (request.getColor() != null) announcement.setColor(request.getColor());
+        if (request.getDriveType() != null) announcement.setDriveType(request.getDriveType());
+        if (request.getEngineCapacity() != 0) announcement.setEngineCapacity(request.getEngineCapacity());
+        if (request.getTransmissionType() != null) announcement.setTransmissionType(request.getTransmissionType());
+        if (request.getMileage() != null) announcement.setMileage(request.getMileage());
+        if (request.getHorsePower() != null) announcement.setHorsePower(request.getHorsePower());
+        if (request.getBodyType() != null) announcement.setBodyType(request.getBodyType());
+
+        if (request.getMakeId() != null) {
+            announcement.setMakeId(request.getMakeId());
+            MarkDTO markDTO = carReferenceService.getMarkDTOById(request.getMakeId());
+            announcement.setMakeName(markDTO.getName());
+        }
+
+        if (request.getModelId() != null) {
+            announcement.setModelId(request.getModelId());
+            ModelDTO modelDTO = carReferenceService.getModelById(request.getModelId());
+            announcement.setModelName(modelDTO.getName());
+        }
+
+        if (request.getGenerationId() != null) {
+            announcement.setGenerationId(request.getGenerationId());
+        }
+
+        if (request.getConfigurationId() != null) {
+            announcement.setConfigurationId(request.getConfigurationId());
+        }
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {
@@ -385,24 +412,18 @@ public class AnnouncementService {
         dto.setStatus(announcement.getStatus());
         dto.setStatusComment(announcement.getStatusComment());
 
-        if (announcement.getMakeId() != null) {
-            MarkDTO markDTO = carReferenceService.getMarkDTOById(announcement.getMakeId());
-            dto.setMakeName(markDTO.getName());
-        }
-        if (announcement.getModelId() != null) {
-            ModelDTO modelDTO = carReferenceService.getModelById(announcement.getModelId());
-            dto.setModelName(modelDTO.getName());
-        }
-        if (announcement.getYear() != null) {
-            dto.setYear(announcement.getYear());
-        }
+        dto.setMakeName(announcement.getMakeName());
+        dto.setModelName(announcement.getModelName());
+        dto.setYear(announcement.getYear());
 
         dto.setColor(announcement.getColor());
         dto.setEngineCapacity(announcement.getEngineCapacity());
         dto.setTransmissionType(announcement.getTransmissionType());
-        dto.setDrivetrain(announcement.getDriveType());
+        dto.setDriveType(announcement.getDriveType());
         dto.setMileage(announcement.getMileage());
         dto.setHorsePower(announcement.getHorsePower());
+        GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(announcement.getGenerationId());
+        dto.setGenerationName(generationDTO.getName());
 
         return dto;
     }

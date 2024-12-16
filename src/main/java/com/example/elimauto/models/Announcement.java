@@ -27,10 +27,14 @@ public class Announcement {
     @Column(name = "title")
     private String title;
 
+    private String makeName;
+    private String modelName;
+
     private String makeId;
     private String modelId;
     private String generationId;
     private String configurationId;
+    private String bodyType;
     private Integer year;
     private String color;
     private String driveType;

@@ -1,6 +1,5 @@
 package com.example.elimauto.models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,7 +17,7 @@ public class Specifications {
     @Column(name = "feeding")
     private String feeding;
 
-    @Column(name = "horse-power")
+    @Column(name = "horse_power")
     private String horsePower;
 
     @Column(name = "kvt-power")
@@ -120,7 +119,7 @@ public class Specifications {
     @Column(name = "emission-euro-class")
     private String emissionEuroClass;
 
-    @Column(name = "volume-litres")
+    @Column(name = "volume_litres")
     private String volumeLitres;
 
     @Column(name = "consumption-mixed")

@@ -12,6 +12,7 @@ public class AnnouncementUpdateRequest {
     private String modelId;
     private String generationId;
     private String configurationId;
+    private String bodyType;
     private Integer year;
     private String color;
     private String driveType;

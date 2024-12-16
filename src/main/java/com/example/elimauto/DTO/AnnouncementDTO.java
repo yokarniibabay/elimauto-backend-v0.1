@@ -22,11 +22,12 @@ public class AnnouncementDTO {
 
     private String makeName;
     private String modelName;
+    private String generationName;
     private Integer year;
     private String color;
     private float engineCapacity;
     private String transmissionType;
-    private String drivetrain;
+    private String driveType;
     private Integer mileage;
     private Integer horsePower;
 }
