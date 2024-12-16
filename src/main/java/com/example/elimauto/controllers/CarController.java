@@ -96,9 +96,9 @@ public class CarController {
     /**
      * Получение доступных типов трансмиссий.
      */
-    @GetMapping("/{configurationId}/transmissions")
+    @GetMapping("/{configurationId}/{volumeLitres}/transmissions")
     public ResponseEntity<List<String>> getTransmissions(@PathVariable String configurationId,
-                                                         @RequestParam String volumeLitres) {
+                                                         @PathVariable String volumeLitres) {
         List<String> transmissions = specificationService.getAvailableTransmissions(configurationId, volumeLitres);
         return ResponseEntity.ok(transmissions);
     }
@@ -106,10 +106,10 @@ public class CarController {
     /**
      * Получение доступных типов привода.
      */
-    @GetMapping("/{configurationId}/drive-types")
+    @GetMapping("/{configurationId}/{volumeLitres}/{transmission}/drive-types")
     public ResponseEntity<List<String>> getDriveTypes(@PathVariable String configurationId,
-                                                      @RequestParam String volumeLitres,
-                                                      @RequestParam String transmission) {
+                                                      @PathVariable String volumeLitres,
+                                                      @PathVariable String transmission) {
         List<String> driveTypes = specificationService.getAvailableDriveTypes(configurationId, volumeLitres, transmission);
         return ResponseEntity.ok(driveTypes);
     }
@@ -117,25 +117,27 @@ public class CarController {
     /**
      * Получение доступных значений мощности двигателя (horsePower).
      */
-    @GetMapping("/{configurationId}/horsepowers")
+    @GetMapping("/{configurationId}/{volumeLitres}/{transmission}/{drive}/horsepowers")
     public ResponseEntity<List<String>> getHorsepowers(@PathVariable String configurationId,
-                                                       @RequestParam String volumeLitres,
-                                                       @RequestParam String transmission,
-                                                       @RequestParam String drive) {
-        List<String> horsepowers = specificationService.getAvailableHorsepowers(configurationId, volumeLitres, transmission, drive);
+                                                       @PathVariable String volumeLitres,
+                                                       @PathVariable String transmission,
+                                                       @PathVariable String drive) {
+        List<String> horsepowers =
+                specificationService.getAvailableHorsepowers(configurationId, volumeLitres, transmission, drive);
         return ResponseEntity.ok(horsepowers);
     }
 
     /**
      * Получение спецификации на основе всех параметров.
      */
-    @GetMapping("/{configurationId}/specification")
+    @GetMapping("/{configurationId}/{volumeLitres}/{transmission}/{drive}/{horsePower}/specification")
     public ResponseEntity<Specifications> getSpecification(@PathVariable String configurationId,
-                                                           @RequestParam String volumeLitres,
-                                                           @RequestParam String transmission,
-                                                           @RequestParam String drive,
-                                                           @RequestParam String horsePower) {
-        Specifications specification = specificationService.getSpecification(configurationId, volumeLitres, transmission, drive, horsePower);
+                                                           @PathVariable String volumeLitres,
+                                                           @PathVariable String transmission,
+                                                           @PathVariable String drive,
+                                                           @PathVariable String horsePower) {
+        Specifications specification =
+                specificationService.getSpecification(configurationId, volumeLitres, transmission, drive, horsePower);
         return ResponseEntity.ok(specification);
     }
 
