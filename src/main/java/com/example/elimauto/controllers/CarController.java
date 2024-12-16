@@ -3,6 +3,7 @@ package com.example.elimauto.controllers;
 import com.example.elimauto.DTO.*;
 import com.example.elimauto.models.*;
 import com.example.elimauto.services.CarReferenceService;
+import com.example.elimauto.services.SpecificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +17,12 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api/cars")
 public class CarController {
     private final CarReferenceService carReferenceService;
+    private final SpecificationService specificationService;
 
-    public CarController(CarReferenceService carReferenceService) {
+    public CarController(CarReferenceService carReferenceService,
+                         SpecificationService specificationService) {
         this.carReferenceService = carReferenceService;
+        this.specificationService = specificationService;
     }
 
     @GetMapping("/makes-popular")
@@ -59,31 +63,44 @@ public class CarController {
     }
 
     @GetMapping("/{configurationId}/modifications")
-    public ResponseEntity<ModificationDTO> getModifications(@PathVariable String configurationId) {
+    public ResponseEntity<List<ModificationDTO>> getModifications(@PathVariable String configurationId) {
         try {
-            ModificationDTO modificationDTO = carReferenceService.getModificationDTOByConfigurationId(configurationId);
-            if (modificationDTO == null) {
+            List<ModificationDTO> modificationDTOS = carReferenceService.getModificationDTOByConfigurationId(configurationId);
+            if (modificationDTOS == null) {
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(modificationDTO);
+            return ResponseEntity.ok(modificationDTOS);
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/{configurationId}/modificationDetails")
-    public ResponseEntity<String> getModificationId(@PathVariable String configurationId) {
-        try {
-            String modificationDetails =
-                    carReferenceService.getModificationDTOByConfigurationId(configurationId).getComplectationId();
-            if (modificationDetails == null) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(modificationDetails);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @GetMapping("/{configurationId}/engine-capacities")
+    public ResponseEntity<List<String>> getEngineCapacities(@PathVariable String configurationId) {
+        return ResponseEntity.ok(specificationService.getAvailableEngineCapacities(configurationId));
     }
+
+    @GetMapping("/{configurationId}/transmissions")
+    public ResponseEntity<List<String>> getTransmissions(@PathVariable String configurationId,
+                                                         @RequestParam String engineCapacity) {
+        return ResponseEntity.ok(specificationService.getAvailableTransmissions(configurationId, engineCapacity));
+    }
+
+    @GetMapping("/{configurationId}/drive-types")
+    public ResponseEntity<List<String>> getDriveTypes(@PathVariable String configurationId,
+                                                      @RequestParam String engineCapacity,
+                                                      @RequestParam String transmission) {
+        return ResponseEntity.ok(specificationService.getAvailableDriveTypes(configurationId, engineCapacity, transmission));
+    }
+
+    @GetMapping("/{configurationId}/horsepowers")
+    public ResponseEntity<List<String>> getHorsepowers(@PathVariable String configurationId,
+                                                        @RequestParam String engineCapacity,
+                                                        @RequestParam String transmission,
+                                                        @RequestParam String driveType) {
+        return ResponseEntity.ok(specificationService.getAvailableHorsepowers(configurationId, engineCapacity, transmission, driveType));
+    }
+
 
     @GetMapping("/{complectationId}/specifications/engineDetails")
     public ResponseEntity<SpecificationsEngineDetailsDTO> getSpecificationsEngineDetails

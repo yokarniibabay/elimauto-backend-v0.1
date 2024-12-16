@@ -1,4 +1,4 @@
-package com.example.elimauto.consts;
+package com.example.elimauto.elimauto.consts;
 
 public enum AnnouncementStatus {
     PENDING,

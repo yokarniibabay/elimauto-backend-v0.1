@@ -1,6 +1,6 @@
 package com.example.elimauto.models;
 
-import com.example.elimauto.consts.AnnouncementStatus;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,9 +33,10 @@ public class Announcement {
     private String configurationId;
     private Integer year;
     private String color;
-    private Integer drivetrain;
+    private String drivetrain;
     private float engineCapacity;
     private String transmissionType;
+    private Integer mileage;
 
     @Column(name = "description")
     private String description;
@@ -65,6 +66,8 @@ public class Announcement {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     @Column(name = "rejected_at")
     private LocalDateTime rejectedAt;

@@ -1,6 +1,6 @@
 package com.example.elimauto.DTO;
 
-import com.example.elimauto.consts.AnnouncementStatus;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import lombok.Data;
 
 import java.util.List;
@@ -26,4 +26,6 @@ public class AnnouncementDTO {
     private String color;
     private float engineCapacity;
     private String transmissionType;
+    private String drivetrain;
+    private Integer mileage;
 }

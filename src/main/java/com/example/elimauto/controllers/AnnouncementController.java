@@ -1,7 +1,7 @@
 package com.example.elimauto.controllers;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
-import com.example.elimauto.consts.AnnouncementStatus;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;

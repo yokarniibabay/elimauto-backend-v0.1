@@ -14,7 +14,8 @@ public class AnnouncementUpdateRequest {
     private String configurationId;
     private Integer year;
     private String color;
-    private Integer drivetrain;
+    private String drivetrain;
+    private Integer mileage;
     private float engineCapacity;
     private String transmissionType;
     private String description;

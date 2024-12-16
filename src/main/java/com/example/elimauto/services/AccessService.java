@@ -1,6 +1,6 @@
 package com.example.elimauto.services;
 
-import com.example.elimauto.consts.AnnouncementStatus;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.User;
 import com.example.elimauto.repositories.AnnouncementRepository;

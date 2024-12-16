@@ -1,15 +1,15 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.*;
-import com.example.elimauto.consts.AnnouncementStatus;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.*;
 import com.example.elimauto.repositories.AnnouncementRepository;
 
 import com.example.elimauto.repositories.ImageRepository;
-import com.example.elimauto.repositories.ModificationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
-    private final ModificationRepository modificationRepository;
+    private final ModelMapper modelMapper;
     private final ImageRepository imageRepository;
     private final ImageService imageService;
     private final UserService userService;
@@ -113,6 +113,7 @@ public class AnnouncementService {
         announcement.setDrivetrain(updateRequest.getDrivetrain());
         announcement.setEngineCapacity(updateRequest.getEngineCapacity());
         announcement.setTransmissionType(updateRequest.getTransmissionType());
+        announcement.setMileage(updateRequest.getMileage());
 
         announcement.setMakeId(updateRequest.getMakeId());
         announcement.setModelId(updateRequest.getModelId());
@@ -137,10 +138,10 @@ public class AnnouncementService {
             ModelDTO modelDTO = carReferenceService.getModelById(updateRequest.getModelId());
             GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(updateRequest.getGenerationId());
 
-            String groupName = null;
-            if (updateRequest.getConfigurationId() != null) {
-                groupName = extractGroupName(updateRequest.getConfigurationId());
-            }
+            String groupName = "";
+//            if (updateRequest.getConfigurationId() != null) {
+//                groupName = extractGroupName(updateRequest.getConfigurationId());
+//            }
 
             String generatedTitle = generateTitle(markDTO.getName(), modelDTO.getName(),
                     generationDTO.isRestyle(), groupName,
@@ -331,14 +332,14 @@ public class AnnouncementService {
         return "temp_" + UUID.randomUUID().toString();
     }
 
-    private String extractGroupName(String configurationId) {
-        if (configurationId == null || configurationId.isEmpty()) {
-            return null;
-        }
-        ModificationDTO modificationDTO =
-                carReferenceService.getModificationDTOByConfigurationId(configurationId);
-        return modificationDTO != null ? modificationDTO.getGroupName() : null;
-    }
+//    private String extractGroupName(String configurationId) {
+//        if (configurationId == null || configurationId.isEmpty()) {
+//            return null;
+//        }
+//        ModificationDTO modificationDTO =
+//                carReferenceService.getModificationDTOByConfigurationId(configurationId);
+//        return modificationDTO != null ? modificationDTO.getGroupName() : null;
+//    }
 
     private void updateAnnouncementFields(Announcement announcement,
                                           AnnouncementUpdateRequest request) {

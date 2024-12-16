@@ -1,4 +1,4 @@
-package com.example.elimauto.config;
+package com.example.elimauto.elimauto.config;
 
 import com.example.elimauto.services.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;

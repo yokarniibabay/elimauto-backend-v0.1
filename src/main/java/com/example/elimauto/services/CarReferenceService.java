@@ -121,8 +121,10 @@ public class CarReferenceService {
                 .collect(Collectors.toList());
     }
 
-    public ModificationDTO getModificationDTOByConfigurationId(String configurationId) {
-        return modificationRepository.findByConfigurationId(configurationId);
+    public List<ModificationDTO> getModificationDTOByConfigurationId(String configurationId) {
+        return modificationRepository.findByConfigurationId(configurationId).stream()
+                .map(modification -> modelMapper.map(modification, ModificationDTO.class))
+                .collect(Collectors.toList());
     }
 
 
