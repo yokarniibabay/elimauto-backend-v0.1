@@ -75,77 +75,70 @@ public class CarController {
         }
     }
 
+    /**
+     * Получение доступных объемов двигателя (volumeLitres) и типов трансмиссий.
+     */
+    @GetMapping("/{configurationId}/available-params")
+    public ResponseEntity<List<EngineTransmissionDTO>> getAvailableParams(@PathVariable String configurationId) {
+        List<EngineTransmissionDTO> params = specificationService.getAvailableEngineAndTransmission(configurationId);
+        return ResponseEntity.ok(params);
+    }
+
+    /**
+     * Получение доступных объемов двигателя (volumeLitres).
+     */
     @GetMapping("/{configurationId}/engine-capacities")
     public ResponseEntity<List<String>> getEngineCapacities(@PathVariable String configurationId) {
-        return ResponseEntity.ok(specificationService.getAvailableEngineCapacities(configurationId));
+        List<String> engineCapacities = specificationService.getAvailableEngineCapacities(configurationId);
+        return ResponseEntity.ok(engineCapacities);
     }
 
+    /**
+     * Получение доступных типов трансмиссий.
+     */
     @GetMapping("/{configurationId}/transmissions")
     public ResponseEntity<List<String>> getTransmissions(@PathVariable String configurationId,
-                                                         @RequestParam String engineCapacity) {
-        return ResponseEntity.ok(specificationService.getAvailableTransmissions(configurationId, engineCapacity));
+                                                         @RequestParam String volumeLitres) {
+        List<String> transmissions = specificationService.getAvailableTransmissions(configurationId, volumeLitres);
+        return ResponseEntity.ok(transmissions);
     }
 
+    /**
+     * Получение доступных типов привода.
+     */
     @GetMapping("/{configurationId}/drive-types")
     public ResponseEntity<List<String>> getDriveTypes(@PathVariable String configurationId,
-                                                      @RequestParam String engineCapacity,
+                                                      @RequestParam String volumeLitres,
                                                       @RequestParam String transmission) {
-        return ResponseEntity.ok(specificationService.getAvailableDriveTypes(configurationId, engineCapacity, transmission));
+        List<String> driveTypes = specificationService.getAvailableDriveTypes(configurationId, volumeLitres, transmission);
+        return ResponseEntity.ok(driveTypes);
     }
 
+    /**
+     * Получение доступных значений мощности двигателя (horsePower).
+     */
     @GetMapping("/{configurationId}/horsepowers")
     public ResponseEntity<List<String>> getHorsepowers(@PathVariable String configurationId,
-                                                        @RequestParam String engineCapacity,
-                                                        @RequestParam String transmission,
-                                                        @RequestParam String driveType) {
-        return ResponseEntity.ok(specificationService.getAvailableHorsepowers(configurationId, engineCapacity, transmission, driveType));
+                                                       @RequestParam String volumeLitres,
+                                                       @RequestParam String transmission,
+                                                       @RequestParam String drive) {
+        List<String> horsepowers = specificationService.getAvailableHorsepowers(configurationId, volumeLitres, transmission, drive);
+        return ResponseEntity.ok(horsepowers);
     }
 
-
-    @GetMapping("/{complectationId}/specifications/engineDetails")
-    public ResponseEntity<SpecificationsEngineDetailsDTO> getSpecificationsEngineDetails
-            (@PathVariable String complectationId) {
-        try {
-            SpecificationsEngineDetailsDTO specificationsEngineDetailsDTO =
-                    carReferenceService.getSpecificationsEngineDetailsDTO(complectationId);
-            if (specificationsEngineDetailsDTO == null) {
-                return ResponseEntity.noContent().build();
-            }
-            return ResponseEntity.ok(specificationsEngineDetailsDTO);
-        } catch (NoSuchElementException ex) {
-            log.warn("No such Specifications element with complectationdId: {}", complectationId);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    /**
+     * Получение спецификации на основе всех параметров.
+     */
+    @GetMapping("/{configurationId}/specification")
+    public ResponseEntity<Specifications> getSpecification(@PathVariable String configurationId,
+                                                           @RequestParam String volumeLitres,
+                                                           @RequestParam String transmission,
+                                                           @RequestParam String drive,
+                                                           @RequestParam String horsePower) {
+        Specifications specification = specificationService.getSpecification(configurationId, volumeLitres, transmission, drive, horsePower);
+        return ResponseEntity.ok(specification);
     }
 
-    @GetMapping("/{complectationId}/specifications/transmissionDetails")
-    public ResponseEntity<String> getSpecificationsTransmissionDetails (@PathVariable String complectationId) {
-        try {
-            String transmission =
-                    carReferenceService.getSpecificationsByComplectation(complectationId).getTransmission();
-            if (transmission == null || transmission.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            }
-            return ResponseEntity.ok(transmission);
-        } catch (NoSuchElementException ex) {
-            log.warn("Transmission was not found for such id: {}", complectationId);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/{complectationId}/specifications/driveDetails")
-    public ResponseEntity<String> getSpecificationsDriveDetails (@PathVariable String complectationId) {
-        try {
-            String driveDetails = carReferenceService.getSpecificationsByComplectation(complectationId).getDrive();
-            if (driveDetails == null || driveDetails.isEmpty()) {
-                return ResponseEntity.noContent().build();
-            }
-            return ResponseEntity.ok(driveDetails);
-        } catch (NoSuchElementException ex) {
-            log.warn("No drive details found for such id: {}", complectationId);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
     @GetMapping("/options")
     public Options getOptions(@PathVariable String complectationId) {

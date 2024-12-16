@@ -10,18 +10,50 @@ import java.util.List;
 
 @Repository
 public interface SpecificationsRepository extends JpaRepository<Specifications, String> {
+
+    // Поиск спецификаций по идентификатору комплектации
     Specifications findByComplectationId(String complectationId);
-    List<Specifications> findByEngineCapacityAndTransmission(Double engineCapacity, String transmission);
 
-    @Query("SELECT DISTINCT s.engineCapacity FROM Specification s WHERE s.configuration.id = :configurationId")
-    List<String> findDistinctEngineCapacities(@Param("configurationId") String configurationId);
+    // Получение уникальных значений объема двигателя (в литрах) и трансмиссии для списка complectationId
+    @Query("SELECT DISTINCT s.volumeLitres, s.transmission " +
+            "FROM Specifications s WHERE s.complectationId IN :complectationIds")
+    List<Object[]> findDistinctVolumeLitresAndTransmission(@Param("complectationIds") List<String> complectationIds);
 
-    @Query("SELECT DISTINCT s.transmission FROM Specification s WHERE s.configuration.id = :configurationId AND s.engineCapacity = :engineCapacity")
-    List<String> findDistinctTransmissions(@Param("configurationId") String configurationId, @Param("engineCapacity") String engineCapacity);
+    // Получение уникальных объемов двигателя (в литрах) для списка complectationId
+    @Query("SELECT DISTINCT s.volumeLitres " +
+            "FROM Specifications s WHERE s.complectationId IN :complectationIds")
+    List<String> findDistinctVolumeLitres(@Param("complectationIds") List<String> complectationIds);
 
-    @Query("SELECT DISTINCT s.driveType FROM Specification s WHERE s.configuration.id = :configurationId AND s.engineCapacity = :engineCapacity AND s.transmission = :transmission")
-    List<String> findDistinctDriveTypes(@Param("configurationId") String configurationId, @Param("engineCapacity") String engineCapacity, @Param("transmission") String transmission);
+    // Получение уникальных типов трансмиссий для заданного объема двигателя (в литрах)
+    @Query("SELECT DISTINCT s.transmission " +
+            "FROM Specifications s WHERE s.complectationId IN :complectationIds AND s.volumeLitres = :volumeLitres")
+    List<String> findDistinctTransmissions(@Param("complectationIds") List<String> complectationIds,
+                                           @Param("volumeLitres") String volumeLitres);
 
-    @Query("SELECT DISTINCT s.horsepower FROM Specification s WHERE s.configuration.id = :configurationId AND s.engineCapacity = :engineCapacity AND s.transmission = :transmission AND s.driveType = :driveType")
-    List<String> findDistinctHorsepowers(@Param("configurationId") String configurationId, @Param("engineCapacity") String engineCapacity, @Param("transmission") String transmission, @Param("driveType") String driveType);
+    // Получение уникальных типов привода для объема двигателя (в литрах) и трансмиссии
+    @Query("SELECT DISTINCT s.drive " +
+            "FROM Specifications s WHERE s.complectationId IN :complectationIds " +
+            "AND s.volumeLitres = :volumeLitres AND s.transmission = :transmission")
+    List<String> findDistinctDrives(@Param("complectationIds") List<String> complectationIds,
+                                    @Param("volumeLitres") String volumeLitres,
+                                    @Param("transmission") String transmission);
+
+    // Получение уникальных значений мощности двигателя для объема двигателя, трансмиссии и типа привода
+    @Query("SELECT DISTINCT s.horsePower " +
+            "FROM Specifications s WHERE s.complectationId IN :complectationIds " +
+            "AND s.volumeLitres = :volumeLitres AND s.transmission = :transmission AND s.drive = :drive")
+    List<String> findDistinctHorsePowers(@Param("complectationIds") List<String> complectationIds,
+                                         @Param("volumeLitres") String volumeLitres,
+                                         @Param("transmission") String transmission,
+                                         @Param("drive") String drive);
+
+    // Поиск спецификаций по всем параметрам
+    @Query("SELECT s FROM Specifications s WHERE s.complectationId IN :complectationIds " +
+            "AND s.volumeLitres = :volumeLitres AND s.transmission = :transmission AND s.drive = :drive " +
+            "AND s.horsePower = :horsePower")
+    List<Specifications> findSpecifications(@Param("complectationIds") List<String> complectationIds,
+                                            @Param("volumeLitres") String volumeLitres,
+                                            @Param("transmission") String transmission,
+                                            @Param("drive") String drive,
+                                            @Param("horsePower") String horsePower);
 }
