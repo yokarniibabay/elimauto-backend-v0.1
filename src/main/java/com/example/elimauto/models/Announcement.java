@@ -33,10 +33,11 @@ public class Announcement {
     private String configurationId;
     private Integer year;
     private String color;
-    private String drivetrain;
+    private String driveType;
     private float engineCapacity;
     private String transmissionType;
     private Integer mileage;
+    private Integer horsePower;
 
     @Column(name = "description")
     private String description;

@@ -28,4 +28,5 @@ public class AnnouncementDTO {
     private String transmissionType;
     private String drivetrain;
     private Integer mileage;
+    private Integer horsePower;
 }

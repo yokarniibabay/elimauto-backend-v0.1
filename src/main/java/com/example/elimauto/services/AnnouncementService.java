@@ -110,10 +110,11 @@ public class AnnouncementService {
         announcement.setCity(updateRequest.getCity());
         announcement.setYear(updateRequest.getYear());
         announcement.setColor(updateRequest.getColor());
-        announcement.setDrivetrain(updateRequest.getDrivetrain());
+        announcement.setDriveType(updateRequest.getDriveType());
         announcement.setEngineCapacity(updateRequest.getEngineCapacity());
         announcement.setTransmissionType(updateRequest.getTransmissionType());
         announcement.setMileage(updateRequest.getMileage());
+        announcement.setHorsePower(updateRequest.getHorsePower());
 
         announcement.setMakeId(updateRequest.getMakeId());
         announcement.setModelId(updateRequest.getModelId());
@@ -352,7 +353,7 @@ public class AnnouncementService {
         if (request.getModelId() != null) announcement.setModelId(request.getModelId());
         if (request.getGenerationId() != null) announcement.setGenerationId(request.getGenerationId());
         if (request.getConfigurationId() != null) announcement.setConfigurationId(request.getConfigurationId());
-        if (request.getDrivetrain()!= null) announcement.setDrivetrain(request.getDrivetrain());
+        if (request.getDriveType()!= null) announcement.setDriveType(request.getDriveType());
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {
@@ -395,6 +396,13 @@ public class AnnouncementService {
         if (announcement.getYear() != null) {
             dto.setYear(announcement.getYear());
         }
+
+        dto.setColor(announcement.getColor());
+        dto.setEngineCapacity(announcement.getEngineCapacity());
+        dto.setTransmissionType(announcement.getTransmissionType());
+        dto.setDrivetrain(announcement.getDriveType());
+        dto.setMileage(announcement.getMileage());
+        dto.setHorsePower(announcement.getHorsePower());
 
         return dto;
     }
