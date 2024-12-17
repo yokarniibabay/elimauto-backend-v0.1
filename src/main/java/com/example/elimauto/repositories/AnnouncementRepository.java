@@ -42,7 +42,8 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             "AND (:minMileage IS NULL OR a.mileage >= :minMileage) " +
             "AND (:maxMileage IS NULL OR a.mileage <= :maxMileage) " +
             "AND (:minPrice IS NULL OR a.price >= :minPrice) " +
-            "AND (:maxPrice IS NULL OR a.price <= :maxPrice)")
+            "AND (:maxPrice IS NULL OR a.price <= :maxPrice) " +
+            "AND (:city IS NULL OR a.city = :city)")
     List<Announcement> searchAnnouncements(@Param("markId") String markId,
                                            @Param("modelId") String modelId,
                                            @Param("generationId") String generationId,
@@ -53,5 +54,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
                                            @Param("minMileage") Integer minMileage,
                                            @Param("maxMileage") Integer maxMileage,
                                            @Param("minPrice") Double minPrice,
-                                           @Param("maxPrice") Double maxPrice);
+                                           @Param("maxPrice") Double maxPrice,
+                                           @Param("city") String city);
 }

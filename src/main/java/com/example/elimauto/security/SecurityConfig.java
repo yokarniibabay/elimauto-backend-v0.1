@@ -54,6 +54,7 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .requestMatchers("/api/image/**").permitAll()
                         .requestMatchers("/api/cars/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
+                        .requestMatchers("/api/cities").permitAll()
                         // Требуют аутентификации
                         .requestMatchers(HttpMethod.GET, "/announcement/private/**").authenticated()
                         .requestMatchers("/announcement/create").authenticated()

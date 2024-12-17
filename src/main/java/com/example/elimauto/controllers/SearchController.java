@@ -62,13 +62,12 @@ public class SearchController {
             @RequestParam(required = false) Integer minMileage,
             @RequestParam(required = false) Integer maxMileage,
             @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice) {
-
-        List<AnnouncementDTO> announcements = searchService.searchAnnouncements(
-                markId, modelId, generationId, minVolume, maxVolume,
-                minYear, maxYear, minMileage, maxMileage, minPrice, maxPrice
-        );
-
-        return ResponseEntity.ok(announcements);
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) String city
+    ) {
+        return ResponseEntity.ok(searchService.searchAnnouncements(
+                markId, modelId, generationId, minVolume, maxVolume, minYear,
+                maxYear, minMileage, maxMileage, minPrice, maxPrice, city
+        ));
     }
 }
