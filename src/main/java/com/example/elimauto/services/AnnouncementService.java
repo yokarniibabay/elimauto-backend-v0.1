@@ -392,7 +392,7 @@ public class AnnouncementService {
         dto.setCity(announcement.getCity());
 
         dto.setAuthorName(announcement.getAuthor() != null ?
-                announcement.getAuthor().getName() : "Неизвестно");
+                announcement.getAuthor().getName() : announcement.getAuthorName());
         dto.setAuthorNumber(announcement.getAuthor() != null ?
                 announcement.getAuthor().getPhoneNumber() : "Invalid Phone Number");
 

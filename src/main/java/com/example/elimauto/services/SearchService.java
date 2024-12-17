@@ -1,6 +1,7 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.repositories.AnnouncementRepository;
 import org.modelmapper.ModelMapper;
@@ -14,10 +15,14 @@ public class SearchService {
 
     private final AnnouncementRepository announcementRepository;
     private final ModelMapper modelMapper;
+    private final AnnouncementService announcementService;
 
-    public SearchService(AnnouncementRepository announcementRepository, ModelMapper modelMapper) {
+    public SearchService(AnnouncementRepository announcementRepository,
+                         ModelMapper modelMapper,
+                         AnnouncementService announcementService) {
         this.announcementRepository = announcementRepository;
         this.modelMapper = modelMapper;
+        this.announcementService = announcementService;
     }
 
     public List<AnnouncementDTO> searchAnnouncements(String markId, String modelId, String generationId,
@@ -31,7 +36,8 @@ public class SearchService {
         );
 
         return announcements.stream()
-                .map(announcement -> modelMapper.map(announcement, AnnouncementDTO.class))
+                .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED)
+                .map(announcementService::convertToDto)
                 .collect(Collectors.toList());
     }
 }
