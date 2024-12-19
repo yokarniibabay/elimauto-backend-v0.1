@@ -9,8 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -89,7 +91,10 @@ public class CarController {
      */
     @GetMapping("/{configurationId}/engine-capacities")
     public ResponseEntity<List<String>> getEngineCapacities(@PathVariable String configurationId) {
-        List<String> engineCapacities = specificationService.getAvailableEngineCapacities(configurationId);
+        List<String> engineCapacities = specificationService.getAvailableEngineCapacities(configurationId)
+                .stream()
+                .sorted(Comparator.comparingDouble(Double::parseDouble))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(engineCapacities);
     }
 
@@ -99,7 +104,11 @@ public class CarController {
     @GetMapping("/{configurationId}/{volumeLitres}/transmissions")
     public ResponseEntity<List<String>> getTransmissions(@PathVariable String configurationId,
                                                          @PathVariable String volumeLitres) {
-        List<String> transmissions = specificationService.getAvailableTransmissions(configurationId, volumeLitres);
+        List<String> transmissions = specificationService.getAvailableTransmissions(configurationId,
+                        volumeLitres)
+                .stream()
+                .sorted(String::compareToIgnoreCase)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(transmissions);
     }
 
@@ -110,7 +119,12 @@ public class CarController {
     public ResponseEntity<List<String>> getDriveTypes(@PathVariable String configurationId,
                                                       @PathVariable String volumeLitres,
                                                       @PathVariable String transmission) {
-        List<String> driveTypes = specificationService.getAvailableDriveTypes(configurationId, volumeLitres, transmission);
+        List<String> driveTypes = specificationService.getAvailableDriveTypes(configurationId,
+                        volumeLitres,
+                        transmission)
+                .stream()
+                .sorted(String::compareToIgnoreCase)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(driveTypes);
     }
 
@@ -122,8 +136,13 @@ public class CarController {
                                                        @PathVariable String volumeLitres,
                                                        @PathVariable String transmission,
                                                        @PathVariable String drive) {
-        List<String> horsepowers =
-                specificationService.getAvailableHorsepowers(configurationId, volumeLitres, transmission, drive);
+        List<String> horsepowers = specificationService.getAvailableHorsepowers(configurationId,
+                        volumeLitres,
+                        transmission,
+                        drive)
+                .stream()
+                .sorted(Comparator.comparingInt(Integer::parseInt))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(horsepowers);
     }
 

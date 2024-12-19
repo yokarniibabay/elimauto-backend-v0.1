@@ -57,6 +57,17 @@ public interface SpecificationsRepository extends JpaRepository<Specifications, 
                                             @Param("drive") String drive,
                                             @Param("horsePower") String horsePower);
 
+
+    // Проверка существования спецификаций
+    @Query("SELECT COUNT(s) > 0 FROM Specifications s WHERE s.complectationId IN :complectationIds " +
+            "AND s.volumeLitres = :volumeLitres AND s.transmission = :transmission AND s.drive = :drive " +
+            "AND s.horsePower = :horsePower")
+    boolean existsSpecifications(@Param("complectationIds") List<String> complectationIds,
+                                 @Param("volumeLitres") String volumeLitres,
+                                 @Param("transmission") String transmission,
+                                 @Param("drive") String drive,
+                                 @Param("horsePower") String horsePower);
+
     // Поиск "С указанием марки, и минимальным значением объема двигателя, от"
     @Query("SELECT DISTINCT s.volumeLitres " +
             "FROM Specifications s " +
