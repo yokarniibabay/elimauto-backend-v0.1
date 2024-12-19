@@ -43,14 +43,13 @@ public class SearchController {
 
     @GetMapping("/engine-volumes")
     public ResponseEntity<List<String>> getEngineVolumes() {
-        // Генерация фиксированного списка объемов двигателя (шаг 0.1)
         List<String> volumes = java.util.stream.IntStream.rangeClosed(5, 80)
                 .mapToObj(i -> String.format("%.1f", i / 10.0))
                 .toList();
         return ResponseEntity.ok(volumes);
     }
 
-    @GetMapping("/announcements")
+    @PostMapping("/announcements")
     public ResponseEntity<List<AnnouncementDTO>> searchAnnouncements(
             @RequestParam(required = false) String markId,
             @RequestParam(required = false) String modelId,

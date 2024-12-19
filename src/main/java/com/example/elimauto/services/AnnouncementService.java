@@ -424,6 +424,7 @@ public class AnnouncementService {
         dto.setHorsePower(announcement.getHorsePower());
         GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(announcement.getGenerationId());
         dto.setGenerationName(generationDTO.getName());
+        dto.setBodyType(announcement.getBodyType());
 
         return dto;
     }

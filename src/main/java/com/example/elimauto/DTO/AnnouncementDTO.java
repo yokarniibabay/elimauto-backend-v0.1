@@ -23,6 +23,7 @@ public class AnnouncementDTO {
     private String makeName;
     private String modelName;
     private String generationName;
+    private String bodyType;
     private Integer year;
     private String color;
     private float engineCapacity;
