@@ -1,6 +1,7 @@
 package com.example.elimauto.services;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
+import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.repositories.AnnouncementRepository;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -52,7 +53,7 @@ public class SearchService {
 
         List<Announcement> announcements = announcementRepository.searchAnnouncements(
                 markId, modelId, generationId, minVolume, maxVolume, minYear,
-                maxYear, minMileage, maxMileage, minPrice, maxPrice, cityToSearch
+                maxYear, minMileage, maxMileage, minPrice, maxPrice, cityToSearch, AnnouncementStatus.APPROVED
         );
 
         return announcements.stream()

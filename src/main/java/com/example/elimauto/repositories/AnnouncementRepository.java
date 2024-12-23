@@ -21,7 +21,10 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     List<Announcement> findByAuthorIdAndStatus(Long authorId, AnnouncementStatus status);
     List<Announcement> findByStatus(AnnouncementStatus status);
     List<Announcement> findAllByStatusAndRejectedAtBefore(AnnouncementStatus status, LocalDateTime dateTime);
-    List<Announcement> findAllByOrderByCreatedAtDesc();
+
+    @Query("SELECT a FROM Announcement a WHERE a.status = :status AND a.id IS NOT NULL ORDER BY a.createdAt DESC")
+    List<Announcement> findAllByOrderByCreatedAtDesc(@Param("status")AnnouncementStatus announcementStatus);
+
 
 
     @Modifying
@@ -43,7 +46,8 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             "AND (:maxMileage IS NULL OR a.mileage <= :maxMileage) " +
             "AND (:minPrice IS NULL OR a.price >= :minPrice) " +
             "AND (:maxPrice IS NULL OR a.price <= :maxPrice) " +
-            "AND (:city IS NULL OR a.city = :city)")
+            "AND (:city IS NULL OR a.city = :city) " +
+            "AND a.status = :status")
     List<Announcement> searchAnnouncements(@Param("markId") String markId,
                                            @Param("modelId") String modelId,
                                            @Param("generationId") String generationId,
@@ -55,5 +59,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
                                            @Param("maxMileage") Integer maxMileage,
                                            @Param("minPrice") Double minPrice,
                                            @Param("maxPrice") Double maxPrice,
-                                           @Param("city") String city);
+                                           @Param("city") String city,
+                                           @Param("status") AnnouncementStatus status);
 }

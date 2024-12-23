@@ -1,12 +1,14 @@
 package com.example.elimauto.controllers;
 
 import com.example.elimauto.DTO.AnnouncementDTO;
+import com.example.elimauto.DTO.SpecificationsDTO;
 import com.example.elimauto.elimauto.consts.AnnouncementStatus;
 import com.example.elimauto.models.Announcement;
 import com.example.elimauto.models.AnnouncementUpdateRequest;
 import com.example.elimauto.services.AnnouncementService;
 
 
+import com.example.elimauto.services.SpecificationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -29,11 +31,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementController {
     private final AnnouncementService announcementService;
+    private final SpecificationService specificationService;
 
     @GetMapping("/allApproved")
     public ResponseEntity<List<AnnouncementDTO>> getAllPublicAnnouncements() {
         log.info("Fetching all public announcements from the database.");
         List<AnnouncementDTO> announcements = announcementService.getAllApprovedAnnouncements();
+
+        if (announcements.isEmpty()) {
+            log.warn("No approved announcements found.");
+        }
+
         return ResponseEntity.ok(announcements);
     }
 
@@ -50,16 +58,16 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcements);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AnnouncementDTO> getAnnouncement(@PathVariable Long id)
-            throws AccessDeniedException {
-        try {
-            AnnouncementDTO dto = announcementService.getAnnouncementById(id);
-            return ResponseEntity.ok(dto);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<AnnouncementDTO> getAnnouncement(@PathVariable Long id)
+//            throws AccessDeniedException {
+//        try {
+//            AnnouncementDTO dto = announcementService.getAnnouncementById(id);
+//            return ResponseEntity.ok(dto);
+//        } catch (EntityNotFoundException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
+//    }
 
     @GetMapping("/public/{id}")
     public ResponseEntity<AnnouncementDTO> getPublicAnnouncement(@PathVariable Long id) {
@@ -69,8 +77,19 @@ public class AnnouncementController {
 
     @GetMapping("/private/{id}")
     public ResponseEntity<AnnouncementDTO> getPrivateAnnouncement(@PathVariable Long id) throws AccessDeniedException {
-        AnnouncementDTO dto = announcementService.getAnnouncementById(id); // Используется полная проверка
+        AnnouncementDTO dto = announcementService.getAnnouncementById(id);
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/{announcementId}/specifications")
+    public ResponseEntity<SpecificationsDTO> getFullSpecificationsByAnnouncementId(@PathVariable Long announcementId) {
+        log.info("Обрабатывается запрос для объявления ID: {}", announcementId);
+        SpecificationsDTO specifications = specificationService.getSpecificationsByAnnouncementId(announcementId);
+
+        if (specifications == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(specifications);
     }
 
     @PostMapping("/create")
@@ -91,7 +110,6 @@ public class AnnouncementController {
             @PathVariable Long id,
             @ModelAttribute AnnouncementUpdateRequest updateRequest) {
         try {
-            log.info("Request received: /announcement/edit/{} with data: {}", id, updateRequest);
             announcementService.editAnnouncement(id, updateRequest);
             return ResponseEntity.ok("Объявление успешно обновлено.");
         } catch (EntityNotFoundException e) {

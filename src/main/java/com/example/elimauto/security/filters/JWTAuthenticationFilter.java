@@ -34,7 +34,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain chain)
             throws IOException, ServletException {
-        String requestPath = request.getRequestURI();
+        String requestPath = request.getRequestURL().toString();
 
         // Разрешаем публичные маршруты без токена
         if (requestPath.startsWith("/announcement/public/") ||

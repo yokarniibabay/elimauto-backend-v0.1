@@ -28,7 +28,7 @@ public class SearchController {
 
     @GetMapping("/{markId}/models")
     public ResponseEntity<List<ModelNameDTO>> getModelsByMark(@PathVariable String markId) {
-        return ResponseEntity.ok(carReferenceService.getModelsByMark(markId));
+        return ResponseEntity.ok(carReferenceService.getModelDTOsByMark(markId));
     }
 
     @GetMapping("/{modelId}/generations")

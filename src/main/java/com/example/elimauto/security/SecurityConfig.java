@@ -60,6 +60,7 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
                         .requestMatchers("/announcement/create").authenticated()
                         .requestMatchers("/announcement/author/{authorId}/announcements").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/announcement/edit/**").authenticated()
+                        .requestMatchers("/announcement/{announcementId}/specifications").permitAll()
                         // Для модератора
                         .requestMatchers(HttpMethod.POST, "/announcement/approve/**").hasRole("MODERATOR")
                         .requestMatchers(HttpMethod.POST, "/announcement/reject/**").hasRole("MODERATOR")
@@ -78,10 +79,10 @@ public class SecurityConfig extends SecurityConfigurerAdapter<DefaultSecurityFil
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://127.0.0.1:5500"); // Ваш фронтенд
-        configuration.addAllowedMethod("*"); // Все HTTP-методы
-        configuration.addAllowedHeader("*"); // Все заголовки
-        configuration.setAllowCredentials(true); // Для токенов
+        configuration.addAllowedOrigin("http://127.0.0.1:5500");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

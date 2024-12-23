@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface ModificationRepository extends JpaRepository<Modification, String> {
     List<Modification> findByConfigurationId(String configurationId);
-    @Query("SELECT m.complectationId FROM Modification m WHERE m.configuration.id = :configurationId")
 
+    @Query("SELECT m.complectationId FROM Modification m WHERE m.configuration.id = :configurationId")
     List<String> findComplectationIdsByConfigurationId(@Param("configurationId") String configurationId);
 }

@@ -71,7 +71,12 @@ public class CarReferenceService {
 
     //MODELS
 
-    public List<ModelNameDTO> getModelsByMark(String markId) {
+    public List<Model> getModelsByMark(String markId) {
+        List<Model> models = modelRepository.findByMarkIdOrderByNameAsc(markId);
+        return models;
+    }
+
+    public List<ModelNameDTO> getModelDTOsByMark(String markId) {
         List<Model> models = modelRepository.findByMarkIdOrderByNameAsc(markId);
         return models.stream()
                 .map(model -> modelMapper.map(model, ModelNameDTO.class))

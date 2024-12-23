@@ -37,8 +37,17 @@ public class CarController {
     }
 
     @GetMapping("/makes/{markId}/models")
-    public ResponseEntity<List<ModelNameDTO>> getModelsByMark(@PathVariable String markId) {
-        List<ModelNameDTO> modelsByMark = carReferenceService.getModelsByMark(markId);
+    public ResponseEntity<List<ModelNameDTO>> getModelDTOsByMark(@PathVariable String markId) {
+        List<ModelNameDTO> modelsByMark = carReferenceService.getModelDTOsByMark(markId);
+        if (modelsByMark.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(modelsByMark);
+    }
+
+    @GetMapping("/makes/{markId}")
+    public ResponseEntity<List<Model>> getModelsByMark(@PathVariable String markId) {
+        List<Model> modelsByMark = carReferenceService.getModelsByMark(markId);
         if (modelsByMark.isEmpty()) {
             return ResponseEntity.noContent().build();
         }

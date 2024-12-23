@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface SpecificationsRepository extends JpaRepository<Specifications, String> {
+    @Query("SELECT s FROM Specifications s WHERE s.complectationId IN :complectationIds")
+    List<Specifications> findSpecificationsByComplectationIds(@Param("complectationIds") List<String> complectationIds);
 
     // Поиск спецификаций по идентификатору комплектации
     Specifications findByComplectationId(String complectationId);

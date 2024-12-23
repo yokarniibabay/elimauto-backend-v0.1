@@ -42,6 +42,7 @@ public class Announcement {
     private String transmissionType;
     private Integer mileage;
     private Integer horsePower;
+    private String characteristicsId;
 
     @Column(name = "description")
     private String description;

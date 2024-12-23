@@ -40,8 +40,7 @@ public class AnnouncementService {
     }
 
     public List<AnnouncementDTO> getAllApprovedAnnouncements() {
-        return announcementRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(announcement -> announcement.getStatus() == AnnouncementStatus.APPROVED)
+        return announcementRepository.findAllByOrderByCreatedAtDesc(AnnouncementStatus.APPROVED).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -193,11 +192,17 @@ public class AnnouncementService {
 
         log.info("Пользователь с ID {} редактирует объявление с ID {}", currentUser.getId(), announcement.getId());
 
-        boolean priceChanged = request.getPrice() != null && !announcement.getPrice().equals(request.getPrice());
-        boolean otherFieldsChanged = request.getDescription() != null || request.getCity() != null;
+        boolean priceChanged = request.getPrice() != null && !request.getPrice().equals(announcement.getPrice());
+
+        boolean descriptionChanged =
+                request.getDescription() != null && !request.getDescription().equals(announcement.getDescription());
+        boolean cityChanged = request.getCity() != null && !request.getCity().equals(announcement.getCity());
+        boolean imagesChanged = (request.getImagesToDelete() != null && !request.getImagesToDelete().isEmpty())
+                || (request.getNewImages() != null && !request.getNewImages().isEmpty())
+                || (request.getOrderedImageIds() != null && !request.getOrderedImageIds().isEmpty());
 
         if (announcement.getStatus() == AnnouncementStatus.APPROVED) {
-            if (!(priceChanged && !otherFieldsChanged)) {
+            if (!(priceChanged || descriptionChanged || cityChanged || imagesChanged)) {
                 announcement.setStatus(AnnouncementStatus.PENDING);
             }
         } else if (announcement.getStatus() == AnnouncementStatus.REJECTED) {
@@ -205,13 +210,14 @@ public class AnnouncementService {
             announcement.setRejectedAt(null);
         }
 
-        if (request.getMakeId() != null || request.getModelId() != null || request.getYear() != null) {
-            MarkDTO markDTO = carReferenceService.getMarkDTOById(announcement.getMakeId());
-            ModelDTO modelDTO = carReferenceService.getModelById(announcement.getModelId());
-            String newTitle = markDTO.getName() + " "
-                    + modelDTO.getName() + ", "
-                    + announcement.getYear() + "г.";
-            announcement.setTitle(newTitle);
+        if (request.getPrice() != null) {
+            announcement.setPrice(request.getPrice());
+        }
+        if (request.getDescription() != null) {
+            announcement.setDescription(request.getDescription());
+        }
+        if (request.getCity() != null) {
+            announcement.setCity(request.getCity());
         }
 
         List<Long> imagesToDelete = request.getImagesToDelete();
@@ -350,40 +356,23 @@ public class AnnouncementService {
 
     private void updateAnnouncementFields(Announcement announcement,
                                           AnnouncementUpdateRequest request) {
-        if (request.getDescription() != null) announcement.setDescription(request.getDescription());
-        if (request.getPrice() != null) announcement.setPrice(request.getPrice());
-        if (request.getCity() != null) announcement.setCity(request.getCity());
-        if (request.getYear() != null) announcement.setYear(request.getYear());
-        if (request.getColor() != null) announcement.setColor(request.getColor());
-        if (request.getDriveType() != null) announcement.setDriveType(request.getDriveType());
-        if (request.getEngineCapacity() != 0) announcement.setEngineCapacity(request.getEngineCapacity());
-        if (request.getTransmissionType() != null) announcement.setTransmissionType(request.getTransmissionType());
-        if (request.getMileage() != null) announcement.setMileage(request.getMileage());
-        if (request.getHorsePower() != null) announcement.setHorsePower(request.getHorsePower());
-        if (request.getBodyType() != null) announcement.setBodyType(request.getBodyType());
-
-        if (request.getMakeId() != null) {
-            announcement.setMakeId(request.getMakeId());
-            MarkDTO markDTO = carReferenceService.getMarkDTOById(request.getMakeId());
-            announcement.setMakeName(markDTO.getName());
+        if (request.getDescription() != null) {
+            announcement.setDescription(request.getDescription());
         }
-
-        if (request.getModelId() != null) {
-            announcement.setModelId(request.getModelId());
-            ModelDTO modelDTO = carReferenceService.getModelById(request.getModelId());
-            announcement.setModelName(modelDTO.getName());
+        if (request.getPrice() != null) {
+            announcement.setPrice(request.getPrice());
         }
-
-        if (request.getGenerationId() != null) {
-            announcement.setGenerationId(request.getGenerationId());
-        }
-
-        if (request.getConfigurationId() != null) {
-            announcement.setConfigurationId(request.getConfigurationId());
+        if (request.getCity() != null) {
+            announcement.setCity(request.getCity());
         }
     }
 
     public AnnouncementDTO convertToDto(Announcement announcement) {
+        if (announcement == null) {
+            log.warn("Передан null объект объявления для конвертации в DTO");
+            throw new IllegalArgumentException("Announcement cannot be null");
+        }
+
         AnnouncementDTO dto = new AnnouncementDTO();
         dto.setId(announcement.getId());
         dto.setTitle(announcement.getTitle());
@@ -391,40 +380,60 @@ public class AnnouncementService {
         dto.setPrice(announcement.getPrice());
         dto.setCity(announcement.getCity());
 
-        dto.setAuthorName(announcement.getAuthor() != null ?
-                announcement.getAuthor().getName() : announcement.getAuthorName());
-        dto.setAuthorNumber(announcement.getAuthor() != null ?
-                announcement.getAuthor().getPhoneNumber() : "Invalid Phone Number");
+        dto.setAuthorName(announcement.getAuthor() != null && announcement.getAuthor().getName() != null
+                ? announcement.getAuthor().getName()
+                : announcement.getAuthorName());
+        dto.setAuthorNumber(announcement.getAuthor() != null
+                ? announcement.getAuthor().getPhoneNumber()
+                : "Invalid Phone Number");
 
         log.info("Конвертация объявления с ID {}: Превью-изображение ID = {}",
                 announcement.getId(), announcement.getPreviewImageId());
 
-        dto.setPreviewImageUrl(announcement.getPreviewImageId() != null ?
-                "/api/image/preview/" + announcement.getPreviewImageId() : null);
+        dto.setPreviewImageUrl(announcement.getPreviewImageId() != null
+                ? "/api/image/preview/" + announcement.getPreviewImageId()
+                : null);
 
-        dto.setImages(announcement.getImages() != null ?
-                announcement.getImages().stream()
-                .map(image -> new ImageDTO(image.getId(), image.getPath(), image.getContentType()))
+        dto.setImages(announcement.getImages() != null
+                ? announcement.getImages().stream()
+                .filter(image -> image != null) // Фильтрация возможных null объектов в коллекции
+                .map(image -> new ImageDTO(
+                        image.getId(),
+                        image.getPath(),
+                        image.getContentType()))
                 .collect(Collectors.toList())
                 : new ArrayList<>());
 
-        dto.setViews(announcement.getViews());
+        dto.setViews(announcement.getViews() != null ? announcement.getViews() : 0L);
         dto.setStatus(announcement.getStatus());
         dto.setStatusComment(announcement.getStatusComment());
 
+        // Установка характеристик автомобиля
         dto.setMakeName(announcement.getMakeName());
         dto.setModelName(announcement.getModelName());
         dto.setYear(announcement.getYear());
-
         dto.setColor(announcement.getColor());
         dto.setEngineCapacity(announcement.getEngineCapacity());
         dto.setTransmissionType(announcement.getTransmissionType());
         dto.setDriveType(announcement.getDriveType());
         dto.setMileage(announcement.getMileage());
         dto.setHorsePower(announcement.getHorsePower());
-        GenerationDTO generationDTO = carReferenceService.getGenerationDTOById(announcement.getGenerationId());
-        dto.setGenerationName(generationDTO.getName());
+
+        // Получение информации о поколении
+        GenerationDTO generationDTO = null;
+        if (announcement.getGenerationId() != null) {
+            try {
+                generationDTO = carReferenceService.getGenerationDTOById(announcement.getGenerationId());
+                dto.setGenerationId(announcement.getGenerationId());
+            } catch (Exception e) {
+                log.error("Ошибка при получении GenerationDTO для generationId {}: {}",
+                        announcement.getGenerationId(), e.getMessage());
+            }
+        }
+        dto.setGenerationName(generationDTO != null ? generationDTO.getName() : null);
+
         dto.setBodyType(announcement.getBodyType());
+        dto.setConfigurationId(announcement.getConfigurationId());
 
         return dto;
     }
