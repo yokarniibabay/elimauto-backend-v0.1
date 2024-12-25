@@ -16,4 +16,13 @@ public interface ModificationRepository extends JpaRepository<Modification, Stri
 
     @Query("SELECT m.complectationId FROM Modification m WHERE m.configuration.id = :configurationId")
     List<String> findComplectationIdsByConfigurationId(@Param("configurationId") String configurationId);
+
+    @Query("""
+        SELECT DISTINCT mod.groupName, mod.configurationId
+        FROM Modification mod
+        JOIN mod.configuration conf
+        JOIN conf.generation gen
+        WHERE gen.model.id = :modelId
+    """)
+    List<Object[]> findGroupsByModelId(@Param("modelId") String modelId);
 }

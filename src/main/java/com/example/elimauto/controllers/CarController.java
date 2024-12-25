@@ -9,9 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,6 +50,12 @@ public class CarController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(modelsByMark);
+    }
+
+    @GetMapping("/{modelId}/groups")
+    public ResponseEntity<List<GroupDTO>> getGroupsByModel(@PathVariable String modelId) {
+        List<GroupDTO> groups = carReferenceService.getGroupsByModel(modelId);
+        return ResponseEntity.ok(groups);
     }
 
     @GetMapping("/{modelId}/generations")

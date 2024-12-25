@@ -8,8 +8,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,6 +90,14 @@ public class CarReferenceService {
         return modelMapper.map(model, ModelDTO.class);
     }
 
+    public List<GroupDTO> getGroupsByModel(String modelId) {
+        List<Object[]> rawGroups = modificationRepository.findGroupsByModelId(modelId);
+        // Преобразуем сырые данные из запроса в DTO
+        return rawGroups.stream()
+                .map(row -> new GroupDTO((String) row[0], (String) row[1]))
+                .collect(Collectors.toList());
+    }
+
 
     //GENERATIONS
 
@@ -115,7 +122,6 @@ public class CarReferenceService {
                 .map(configuration -> modelMapper.map(configuration, ConfigurationDTO.class))
                 .collect(Collectors.toList());
     }
-
 
 
     //MODIFICATIONS
